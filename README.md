@@ -9,4 +9,5 @@ In SQL, we imported BTC.csv which includes crypto currency daily price change an
 
 ### ERD
 We have 1 dataset includes cryptocurrency daily price change and the data for social media feeds volumn and score. For the purpose of the mockup database, we use Bitcoin to analyze the trend between social media feeds and time series model to analyze the potential flucatuation of the currency. In the next module, we will be using other cryptocurrency and we will use the date as a key to merge differenct currency and to analyze there is a impact when other currency has high discussion threads.
+
 ![](/img/BTC_test_QuickDBD.png)
