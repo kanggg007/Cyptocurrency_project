@@ -26,3 +26,6 @@ Determine the social media impact on its price
 ## Description of the communication protocols
 Given the limitations due to the pandemic, our communication has been reduced to Slack and video conferences.
 
+## Machine Model 
+There are three models that we have been used including Autoregression time series, LTSM as well as forest random model
+
