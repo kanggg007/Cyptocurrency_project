@@ -9,8 +9,6 @@ Cryptocurrencies are getting traction as an investment opportunity. It is throug
 ## Description of the source of data
 The data is sourced from LunarCRUSH, a platform that aims to bring transparency to cryptocurrency investing by providing clarity around community activity. This platform employs social data and machine learning to rank coins and prive traders broader visibility and context.
 
-### Database
-We present the mockup database using a SQL-based database, including an ERD of the database. 
 #### SQL
 In SQL, we imported BTC.csv which includes crypto currency daily price change and the data for social media feeds volume and score for discussion of specifying cryptocurrency from Python. In the dataset, timestamp info is transferred to DateTime data for further comparison with other cryptocurrencies. After the import, we have performed the completeness check over the imported data from python with no variance noted.
 
