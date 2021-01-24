@@ -26,3 +26,6 @@ Determine the social media impact on its price
 ## Description of the communication protocols
 Given the limitations due to the pandemic, our communication has been reduced to Slack and video conferences.
 
+## machine model selection
+BTC price is not randomly generated values instead it can be treated as a discrete time series model which is based on a set of well-defined numerical data items collected at consecutive points at regular intervals of time. Therefore, autoregression and LTSM are two models that we are going to apply to this project. 
+Based on the sample model of Autoregression, we have included pretty performance regarding of accuracy, around 2.5% MAPE(Mean Absolute Percentage Error) implies the model is about 97.5% accurate in predicting the test set observations. 
