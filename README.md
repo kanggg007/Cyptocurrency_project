@@ -66,3 +66,4 @@ Given the limitations due to the pandemic, our communication has been reduced to
 ## Machine model selection
 Cryptocurrency price is not randomly generated values instead it can be treated as a discrete time series model which is based on a set of well-defined numerical data items collected at consecutive points at regular intervals of time. Therefore, autoregression and LTSM are two models that we have decided to apply for this project. Based on the sample model of Autoregression, we have included pretty good performance with not big dataset regarding of accuracy, around 2.5% MAPE(Mean Absolute Percentage Error) implies the model is about 97.5% accurate in predicting the test set observations.
 
+https://docs.google.com/presentation/d/17dsthRwHLbMnXjvvfqc2D4McVbqHzYrqJ2VrrwrxA1E/edit#slide=id.gb96a9f954a_0_229
