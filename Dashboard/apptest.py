@@ -20,7 +20,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 from sklearn.preprocessing import MinMaxScaler
-
+import joblib
 from config2 import db_password, user_name, aws_password
 
 # data =  pd.read_csv('test_data')
@@ -261,54 +261,56 @@ def update_social(selected_ticket):
     )
 
 def update_LSTM(start_date, end_date,selected_ticket):
-    new_data = pd.read_csv('test_data')[['time','name','close']]
-    new_data =new_data.loc[data['time'].between(start_date, end_date)]
-    new_data_1 = new_data.loc[new_data['name'] == selected_ticket]
+    loaded_model = joblib.load('../../LSTM_models/BTC_LSTM)
+    result = as
+    # new_data = pd.read_csv('test_data')[['time','name','close']]
+    # new_data =new_data.loc[data['time'].between(start_date, end_date)]
+    # new_data_1 = new_data.loc[new_data['name'] == selected_ticket]
 
-    new_data_2 = new_data_1.copy()
-    new_data_2.index = new_data_2.time
-    new_data_2.drop('time', axis=1, inplace=True)
-    new_data_2.drop('name', axis=1, inplace= True)
-    final_dataset = new_data_2['close'].values.reshape(-1,1)
-    train_data=final_dataset[0:int(len(final_dataset)*0.80)]
-    valid_data=final_dataset[int(len(final_dataset)*0.80):]
-    scaler = MinMaxScaler()
-    #Scale the data
-    scaler.fit(train_data)
-    scaled_data =scaler.transform(final_dataset.values.reshape(-1,1))
+    # new_data_2 = new_data_1.copy()
+    # new_data_2.index = new_data_2.time
+    # new_data_2.drop('time', axis=1, inplace=True)
+    # new_data_2.drop('name', axis=1, inplace= True)
+    # final_dataset = new_data_2['close'].values.reshape(-1,1)
+    # train_data=final_dataset[0:int(len(final_dataset)*0.80)]
+    # valid_data=final_dataset[int(len(final_dataset)*0.80):]
+    # scaler = MinMaxScaler()
+    # #Scale the data
+    # scaler.fit(train_data)
+    # scaled_data =scaler.transform(final_dataset.values.reshape(-1,1))
     
 
     
-    x_train_data,y_train_data=[],[]
-    for i in range(10,len(train_data)):
-        x_train_data.append(scaled_data[i-10:i,0])
-        y_train_data.append(scaled_data[i,0])
+    # x_train_data,y_train_data=[],[]
+    # for i in range(10,len(train_data)):
+    #     x_train_data.append(scaled_data[i-10:i,0])
+    #     y_train_data.append(scaled_data[i,0])
         
-    x_train_data,y_train_data=np.array(x_train_data),np.array(y_train_data)
-    x_train_data=np.reshape(x_train_data,(x_train_data.shape[0],x_train_data.shape[1],1))
-    model=load_model("saved_model.h5")
+    # x_train_data,y_train_data=np.array(x_train_data),np.array(y_train_data)
+    # x_train_data=np.reshape(x_train_data,(x_train_data.shape[0],x_train_data.shape[1],1))
+    # model=load_model("saved_model.h5")
 
-    inputs_data=new_data_2[len(new_data_2)-len(valid_data)-10:].values
-    inputs_data=inputs_data.reshape(-1,1)
-    inputs_data=scaler.transform(inputs_data)
+    # inputs_data=new_data_2[len(new_data_2)-len(valid_data)-10:].values
+    # inputs_data=inputs_data.reshape(-1,1)
+    # inputs_data=scaler.transform(inputs_data)
 
-    X_test=[]
-    for i in range(10,inputs_data.shape[0]):
-        X_test.append(inputs_data[i-10:i,0])
-    X_test=np.array(X_test)
+    # X_test=[]
+    # for i in range(10,inputs_data.shape[0]):
+    #     X_test.append(inputs_data[i-10:i,0])
+    # X_test=np.array(X_test)
 
-    X_test=np.reshape(X_test,(X_test.shape[0],X_test.shape[1],1))
-    closing_price=model.predict(X_test)
-    closing_price=scaler.inverse_transform(closing_price)
+    # X_test=np.reshape(X_test,(X_test.shape[0],X_test.shape[1],1))
+    # closing_price=model.predict(X_test)
+    # closing_price=scaler.inverse_transform(closing_price)
 
-    train=new_data_2[0:int(len(final_dataset)*0.80)]
-    valid=new_data_2[int(len(final_dataset)*0.80):]
-    valid['Predictions']=closing_price
+    # train=new_data_2[0:int(len(final_dataset)*0.80)]
+    # valid=new_data_2[int(len(final_dataset)*0.80):]
+    # valid['Predictions']=closing_price
 
-    line_fig_LSTM = go.line(new_data_2,
-                            x= train.index, y=valid["Predictions"],mode = 'markers',
-                            title ='LSTM')
-    return line_fig_LSTM
+    # line_fig_LSTM = go.line(new_data_2,
+    #                         x= train.index, y=valid["Predictions"],mode = 'markers',
+    #                         title ='LSTM')
+    return result
 
 
 
