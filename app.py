@@ -3,9 +3,9 @@ from flask import Flask, render_template, redirect
 from sqlalchemy import create_engine
 import json
 import pandas as pd
-from config2 import user_name
-from config2 import aws_password
-from config2 import db_password
+# from config2 import user_name
+# from config2 import aws_password
+# from config2 import db_password
 # import scraping
 
 app = Flask(__name__)
