@@ -187,7 +187,7 @@ def update_data(selected_ticket):
     )
 
 # Set x-axis title
-    genral_fig4.update_xaxes(title_text="xaxis title")
+    genral_fig4.update_xaxes(title_text="Date")
 
 # Set y-axes titles
     genral_fig4.update_yaxes(title_text="Tweets", secondary_y=False)
