@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Cryptocurrency Pricing</title>
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+    />
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  </head>
+  <body>
+    
+    <!-- <div id="bar-plot"></div>
+    <div id="bar-plot-2"></div>
+  
+    <script src="data.js"></script>
+    <script src="plots.js"></script>
+     -->
+    <div class="container">
+      <!-- Add Jumbotron to Header -->
+      <div class="jumbotron text-center">
+        <h1>Cryptocurrency Pricing</h1>
+        <!-- Add a button to activate scraping script -->
+        <!-- <p><a class="btn btn-primary btn-lg" href="/scrape" role="button">Scrape New Data</a></p> -->
+      </div>
+      <!-- Add section for Mars News -->
+      <div class="row" id="mars-news">
+        <div class="col-md-12">
+          <div class="media">
+            <div class="media-body">
+              <h2>General overview of data</h2>
+              <h4 class="media-heading">A cryptocurrency (or crypto currency or crypto for short) is a digital asset designed to work as a medium of exchange wherein individual coin ownership records are stored in a ledger existing in a form of computerized database using strong cryptography to secure transaction records, to control the creation of additional coins, and to verify the transfer of coin ownership. It typically does not exist in physical form (like paper money) and is typically not issued by a central authority. Cryptocurrencies typically use decentralized control as opposed to centralized digital currency and central banking systems.[3] When a cryptocurrency is minted or created prior to issuance or issued by a single issuer, it is generally considered centralized. When implemented with decentralized control, each cryptocurrency works through distributed ledger technology, typically a blockchain, that serves as a public financial transaction database.
+
+                The data is sourced from LunarCRUSH, a platform that aims to bring transparency to cryptocurrency investing by providing clarity around community activity. This platform employs social data and machine learning to rank coins and price traders broader visibility and context.
+                </h4>
+              <h4 class="media-heading">There are approximately 5,392 cryptocurrencies being traded with a total market capitalisation of $201bn. The top 20 cryptocurrencies by market capitalisation:Beginning with the largest, the top 20 are currently Bitcoin ($BTC), Ethereum ($ETH),  Tether ($USDT), Polkadot, XRP ($XRP), Cardano, Chainlink, Litecoin,  Bitcoin Cash ($BCH), Binance Coin, Stellar, USD Coin, HEX, Wrapped Bitcoin, Uniswap, Bitcoin SV, ,Aave, EOS, Celsius, Dogecoin.
+                <figure class="half">
+                  <table>
+                    <tr>
+                      <td>
+                        <img style="width:400px;" src="img/top20_market cap.png">
+                      </td>
+                      <td>
+                        <img style="width:600px;" src="img/price.png">
+                      </td>
+                    </tr>
+                  </table>
+                  <!-- <figcaption>Caption describing these two images.</figcaption> -->
+                </figure>
+              </h4>
+              <h2>Status of currencies - Data explanation & Top 20 ranked currencies</h2>
+              <h4 class="media-heading">How Social Media Is Helping Cryptocurrency Flourish. We used the data from  LunarCRUSH with  the amount of url_shares, reddit_posts, tweets, news, youtube on Jan 30, 2020 for each currency. The currency with largest discussion feeds is Bitcoin composed of 66.9%. The second largest is ETH with 13.3%..
+                <figure class="half">
+                  <table>
+                    <tr>
+                      <td>
+                        <img style="width:400px;" src="img/social_media.png">
+                      </td>
+                      <td>
+                        <!-- <img style="width:600px;" src="../img/price.png"> -->
+                      </td>
+                    </tr>
+                  </table>
+                  <!-- <figcaption>Caption describing these two images.</figcaption> -->
+                </figure>
+              </h4>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Section for Featured Image and Facts table -->
+      <div class="row" id="mars-featured-image">
+        <div class="col-md-8">
+          <h2>Cryptourrency Analysis</h2>
+          <div class="well">
+            <h5>Select cryptocurrency:</h5>
+            <!-- <select id="selDataset"></select> -->
+            <select id="selDataset" onchange="optionChanged(this.value)"></select>
+          </div>
+          <h3>Overview of filtered currency</h3>
+          <h4 class="media-heading">Ethereum is a decentralized, open-source blockchain featuring smart contract functionality. Ether is the native cryptocurrency of the platform. It is the second-largest cryptocurrency by market capitalization, after Bitcoin. Ethereum is the most actively used blockchain.</h4>
+          
+          <!-- <img
+            src="{{mars.featured_image }}"
+            class="img-responsive"
+            alt="Responsive image"
+          /> -->
+        
+          <div class="col-md-5">
+            <div class="row" id="mars-facts">
+              <table>
+                <tr>
+                  <td>
+                    <h5>Trends of price &  social media posts through history</h5>
+                      <img style="width:400px;" src="img/Reddit_price.png">
+                  </td>
+                  <td>
+                    <h5>Social Media distribution of selected currency - radar plot</h5>
+                      <img style="width:400px;" src="img/ETH radar plot.png">
+                  </td>
+                </tr>
+              </table>
+          </div>
+          </div>
+        </div>
+      </div>
+      <div class="row" id="hemisphere-image">
+        <div class="col-md-8">
+          <h3>Model 1 Results - ARIMA</h3>
+            <h4>A famous and widely used forecasting method for time-series prediction is the AutoRegressive Integrated Moving Average (ARIMA) model. ARIMA models are capable of capturing a suite of different standard temporal structures in time-series data.</h4>
+            <img style="width:400px;" src="img/AR model ETH.png">
+          <h3>Model 2 Results - LSTMs</h3>
+            <h4>Time-series forecasting models are the models that are capable of predicting future values based on previously observed values. Long short-term memory (LSTM) is an artificial recurrent neural network (RNN) architecture used in the field of deep learning having feedback connections. Not only can process single data points such as images, but also entire sequences of data such as speech or video.
+            </h4>
+            <img style="width:400px;" src="img/LSTM ETH.png">
+          <h3>Model 3 Results - Random Forest</h3>
+            <h4>Multiple decision trees working in individual samples of the data gives the opportunity to predict coin price considering the relationship they have with social media engagement. It was selected because it’s robust against overfitting, outliers, and non linear data.</h4>
+            <img style="width:400px;" src="img/RF ETH.png">
+
+          <!-- <div class="col-md-6 border border-secondary" style="background-color:lightgrey;">
+            <a href={{hemisphere.image_url}}>
+              <img class="img-responsive" src={{hemisphere.image_url}} alt={{hemisphere.title}} style="width:100%">
+              <h5 class="text-info">{{ hemisphere.title }}</h5>
+            </a>
+          </div>
+            {% endfor %} -->
+        </div>
+          
+      </div>
+    </div>
+    
+   
+  </body>
+</html>
