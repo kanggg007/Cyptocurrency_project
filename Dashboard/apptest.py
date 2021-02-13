@@ -190,8 +190,8 @@ def update_data(selected_ticket):
     genral_fig4.update_xaxes(title_text="xaxis title")
 
 # Set y-axes titles
-    genral_fig4.update_yaxes(title_text="<b>primary</b> yaxis title", secondary_y=False)
-    genral_fig4.update_yaxes(title_text="<b>secondary</b> yaxis title", secondary_y=True)
+    genral_fig4.update_yaxes(title_text="Tweets", secondary_y=False)
+    genral_fig4.update_yaxes(title_text="Price", secondary_y=True)
     
     # genral_fig4.add_trace(
     # go.Scatter(x=coin_df['time'], y=[coin_df['reddit_posts']]),
