@@ -1,0 +1,21 @@
+,name,symbol,asset_id
+0,Bitcoin,BTC,1
+1,Ethereum,ETH,2
+2,Tether,USDT,7
+3,Polkadot,DOT,2780
+4,XRP,XRP,3
+5,Cardano,ADA,11
+6,Chainlink,LINK,18
+7,Litecoin,LTC,4
+8,Bitcoin Cash,BCH,5
+9,Stellar,XLM,10
+10,Binance Coin,BNB,6
+11,Dogecoin,DOGE,29
+12,USD Coin,USDC,28
+13,HEX,HEX,2205
+14,Uniswap,UNI,3024
+15,Wrapped Bitcoin,WBTC,1940
+16,Aave,AAVE,3154
+17,Bitcoin SV,BSV,9
+18,EOS,EOS,8
+19,Celsius,CEL,1930
