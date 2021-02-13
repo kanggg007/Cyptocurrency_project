@@ -1,0 +1,3 @@
+db_password='Kl@v5SQL'
+user_name='Crypto_Team'
+aws_password='Cryptocurrency_Project'
