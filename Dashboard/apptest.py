@@ -22,6 +22,7 @@ import plotly.graph_objects as go
 from sklearn.preprocessing import MinMaxScaler
 import joblib
 from config2 import db_password, user_name, aws_password
+from dash.dependencies import Input, Output
 
 # data =  pd.read_csv('test_data')
 
@@ -96,7 +97,7 @@ app.layout = html.Div([
             html.Div([dcc.Graph(id='data-plot-overview2', figure=genral_fig2)], className='row4'),
             html.Div([dcc.Graph(id='data-plot-overview3', figure=genral_fig3)], className='row5'),
                     
-                    html.H1(
+                    html.H3(
                         children = 'Select Cryptocurrency',
                         style = {
                             'textAlign': 'left'
@@ -105,7 +106,8 @@ app.layout = html.Div([
                     dcc.Dropdown(
                         id = 'my-dropdown',
                         options = [{'label': i, 'value': i}for i in data['name'].unique()],
-                        placeholder = 'please enter ticker'
+                        placeholder = 'please enter ticker',
+                        style={'width': '50%'}
                     ),
                     
 
@@ -126,17 +128,62 @@ app.layout = html.Div([
                         children = 'Submit',
                         n_clicks = 0,  
                     ),
+                    html.H3(
+                        children = 'Enter social media volume',
+                        style = {
+                            'textAlign': 'left'
+                        }
+                    ),
+                    html.Div([
+                    # dcc.Input(id="dfalse", type="number", placeholder="Debounce False"),
+                    # dcc.Input(
+                    #     id="dtrue", type="number",
+                    #     debounce=True, placeholder="Debounce True",
+                    # ),
+                    dcc.Input(
+                    id="textarea-state-example", type="number", placeholder="reddit posts",
+                    min=100, max=100000, step=100,
+                    style={'width': '10%'}
+                    ),
+                    dcc.Input(
+                    id="textarea-state-example1", type="number", placeholder="tweets",
+                    min=100, max=100000, step=100,
+                    style={'width': '10%'}
+                    ),
+                    dcc.Input(
+                    id="textarea-state-example2", type="number", placeholder="news",
+                    min=100, max=100000, step=100,
+                    style={'width': '10%'}
+                    ),
+                    dcc.Input(
+                    id="textarea-state-example3", type="number", placeholder="youtube",
+                    min=100, max=100000, step=100,
+                    style={'width': '10%'}
+                    ),
+                    dcc.Input(
+                    id="textarea-state-example4", type="number", placeholder="url_shares",
+                    min=100, max=100000, step=100,
+                    style={'width': '10%'}
+                    ),
+                    html.Button('Submit', id='textarea-state-example-button', n_clicks=0),
+                    html.Div(id='textarea-state-example-output', style={'whiteSpace': 'pre-line'})
                     # html.Div([dcc.Graph(id='data-plot-overview4', figure=genral_fig4)], className='row8'),
                     # html.Div([dcc.Graph(id='data-plot-overview5', figure=genral_fig5)], className='row9'),
-
+                    ]),
                     html.Div([
                     dcc.Tabs(id='tabs-styled-with-props', value='tab-1', children = [
                         dcc.Tab(label='Acutal Price', value='tab-1',children = [dcc.Graph(id = 'm')]),
                         dcc.Tab(label='Social Radar', value='tab-2',children = [dcc.Graph(id = 'i')]),
                         dcc.Tab(label='Social Impact', value='tab-3',children = [dcc.Graph(id = 'n')]),
                         dcc.Tab(label = 'LSTM Predicted Price ', value = 'tab-4', children = [dcc.Graph(id = 'l')]),
-                     ]),  
-                    html.Div(id='tabs-example-content')
+                        dcc.Tab(label = 'Arima Predicted Price ', value = 'tab-5', children = [dcc.Graph(id = 'k')]),
+                        dcc.Tab(label = 'Random Forest Predicted Price ', value = 'tab-6'),
+                        
+                        ]),  
+                    html.Div(id='tabs-example-content'),
+
+
+
                 ])
         
             
@@ -260,60 +307,102 @@ def update_social(selected_ticket):
     Input(component_id='my-dropdown', component_property='value')]
     )
 
-def update_LSTM(start_date, end_date,selected_ticket):
-    loaded_model = joblib.load('../../LSTM_models/BTC_LSTM)
-    result = as
+# def update_LSTM(selected_ticket):
+    # model_imported = tf.keras.models.load_model("../../LSTM_models/BTC_LSTM.H5")
+
+    # loaded_model = joblib.load('../../LSTM_models/BTC_LSTM)
+    # result = as
     # new_data = pd.read_csv('test_data')[['time','name','close']]
     # new_data =new_data.loc[data['time'].between(start_date, end_date)]
-    # new_data_1 = new_data.loc[new_data['name'] == selected_ticket]
-
-    # new_data_2 = new_data_1.copy()
-    # new_data_2.index = new_data_2.time
-    # new_data_2.drop('time', axis=1, inplace=True)
-    # new_data_2.drop('name', axis=1, inplace= True)
-    # final_dataset = new_data_2['close'].values.reshape(-1,1)
-    # train_data=final_dataset[0:int(len(final_dataset)*0.80)]
-    # valid_data=final_dataset[int(len(final_dataset)*0.80):]
-    # scaler = MinMaxScaler()
-    # #Scale the data
-    # scaler.fit(train_data)
-    # scaled_data =scaler.transform(final_dataset.values.reshape(-1,1))
+    # data_1 = data.loc[data['name'] == selected_ticket]
+    # data_1 =data_1.dropna()
+    # data_1=data_1[['time', 'close']].copy()
     
+    # from sklearn.preprocessing import MinMaxScaler
+    # cl = data_1_clean.close.astype('float32')
+    # train = cl[0:int(len(cl)*0.80)]
+    # scl = MinMaxScaler()
+    #     #Scale the data
+    # scl.fit(train.values.reshape(-1,1))
+    # cl =scl.transform(cl.values.reshape(-1,1))
+    # #Create a function to process the data into lb observations look back slices
+    # # and create the train test dataset (90-10)
+    # def processData(coin_df,lb):
+    #     X,Y = [],[]
+    #     for i in range(len(coin_df)-lb-1):
+    #         X.append(coin_df[i:(i+lb),0])
+    #         Y.append(coin_df[(i+lb),0])
+    #     return np.array(X),np.array(Y)
+    # lb=10
+    # X,y = processData(cl,lb)
+    # X_train,X_test = X[:int(X.shape[0]*0.90)],X[int(X.shape[0]*0.90):]
+    # y_train,y_test = y[:int(y.shape[0]*0.90)],y[int(y.shape[0]*0.90):]
 
-    
-    # x_train_data,y_train_data=[],[]
-    # for i in range(10,len(train_data)):
-    #     x_train_data.append(scaled_data[i-10:i,0])
-    #     y_train_data.append(scaled_data[i,0])
-        
-    # x_train_data,y_train_data=np.array(x_train_data),np.array(y_train_data)
-    # x_train_data=np.reshape(x_train_data,(x_train_data.shape[0],x_train_data.shape[1],1))
-    # model=load_model("saved_model.h5")
+    # import keras
+    # from keras import Sequential
+    # from keras.layers import LSTM
+    # from keras.layers import Dense
 
-    # inputs_data=new_data_2[len(new_data_2)-len(valid_data)-10:].values
-    # inputs_data=inputs_data.reshape(-1,1)
-    # inputs_data=scaler.transform(inputs_data)
-
-    # X_test=[]
-    # for i in range(10,inputs_data.shape[0]):
-    #     X_test.append(inputs_data[i-10:i,0])
-    # X_test=np.array(X_test)
-
-    # X_test=np.reshape(X_test,(X_test.shape[0],X_test.shape[1],1))
-    # closing_price=model.predict(X_test)
-    # closing_price=scaler.inverse_transform(closing_price)
-
-    # train=new_data_2[0:int(len(final_dataset)*0.80)]
-    # valid=new_data_2[int(len(final_dataset)*0.80):]
-    # valid['Predictions']=closing_price
-
+    # model = Sequential()
+    # model.add(LSTM(256,input_shape=(lb,1)))
+    # model.add(Dense(1))
+    # model.compile(optimizer='adam',loss='mse')
+    # #Reshape data for (Sample,Timestep,Features) 
+    # X_train = X_train.reshape((X_train.shape[0],X_train.shape[1],1))
+    # X_test = X_test.reshape((X_test.shape[0],X_test.shape[1],1))
+    # #Fit model with history to check for overfitting
+    # history = model.fit(X_train,y_train,epochs=100,validation_data=(X_test,y_test),shuffle=False)
+    # plt.figure(figsize=(12,8))
+    # Xt = model.predict(X_train)
+    # plt.plot(scl.inverse_transform(y_train.reshape(-1,1)), label="Actual")
+    # plt.plot(scl.inverse_transform(Xt), label="Predicted")
+    # plt.legend()
+    # plt.title("Train Dataset")  
     # line_fig_LSTM = go.line(new_data_2,
     #                         x= train.index, y=valid["Predictions"],mode = 'markers',
     #                         title ='LSTM')
-    return result
+    # return line_fig_LSTM
+
+#  app.layout = html.Div([
+#     dcc.Textarea(
+#         id='textarea-example',
+#         value='Textarea content initialized\nwith multiple lines of text',
+#         style={'width': '100%', 'height': 300},
+#     ),
+#     html.Div(id='textarea-example-output', style={'whiteSpace': 'pre-line'})
+#     ])
 
 
+@app.callback(
+    Output('textarea-state-example-output', 'children'),
+    Input('textarea-state-example-button', 'n_clicks'),
+    State('textarea-state-example', 'value'),State('textarea-state-example1', 'value'),State('textarea-state-example2', 'value'),State('textarea-state-example3', 'value'),State('textarea-state-example4', 'value')
+)
+def update_output(n_clicks, value):
+    if n_clicks > 0:
+        return 'You have entered: \n{}'.format(value)
 
+    
+    
+# df3 = df2.loc[:, ['name', 'url_shares_Adj','reddit_posts_Adj','tweets_Adj','news_Adj','youtube_Adj']]
+
+    # df3.rename(columns={
+    # 'url_shares_Adj': 'url_shares',
+    # 'reddit_posts_Adj': 'reddit_posts',
+    # 'tweets_Adj': 'tweets',
+    # 'news_Adj': 'news',
+    # 'youtube_Adj': 'youtube'
+    # }, inplace=True)
+    # from math import pi
+    # categories=list(df3)[1:]
+    # N = len(categories)
+    
+    # r=df3.loc[df3['name']==selected_ticket].drop(columns=['name']).values.flatten().tolist()
+    # df4 = pd.DataFrame(dict(r=r,theta=categories))
+
+    # genral_fig5 = px.line_polar(df4, r='r', theta='theta', line_close=True)    
+
+    # return genral_fig5
 
 
 @app.callback(Output('tabs-example-content', 'children'),
