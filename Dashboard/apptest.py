@@ -93,9 +93,9 @@ app.layout = html.Div([
                             'textAlign': 'center'
                         }
                     ),
-            html.Div([dcc.Graph(id='data-plot-overview', figure=genral_fig)], className='row3'),
-            html.Div([dcc.Graph(id='data-plot-overview2', figure=genral_fig2)], className='row4'),
-            html.Div([dcc.Graph(id='data-plot-overview3', figure=genral_fig3)], className='row5'),
+                    html.Div([dcc.Graph(id='data-plot-overview', figure=genral_fig)], className='row3'),
+                    html.Div([dcc.Graph(id='data-plot-overview2', figure=genral_fig2)], className='row4'),
+                    html.Div([dcc.Graph(id='data-plot-overview3', figure=genral_fig3)], className='row5'),
                     
                     html.H3(
                         children = 'Select Cryptocurrency',
@@ -120,9 +120,6 @@ app.layout = html.Div([
                     #     ),
                     #     html.Div(id='output-container-date-picker-range'),
 
-                    
-                    
-
                     html.Button(
                         id='update-button', 
                         children = 'Submit',
@@ -140,33 +137,34 @@ app.layout = html.Div([
                     #     id="dtrue", type="number",
                     #     debounce=True, placeholder="Debounce True",
                     # ),
+                    html.Br(),
                     dcc.Input(
-                    id="textarea-state-example", type="number", placeholder="reddit posts",
-                    min=100, max=100000, step=100,
+                    id="reddit", type="number", placeholder="reddit posts",
+                    min=100, max=100000, step=1,
                     style={'width': '10%'}
                     ),
                     dcc.Input(
-                    id="textarea-state-example1", type="number", placeholder="tweets",
-                    min=100, max=100000, step=100,
+                    id="tweets", type="number", placeholder="tweets",
+                    min=100, max=100000, step=1,
                     style={'width': '10%'}
                     ),
                     dcc.Input(
-                    id="textarea-state-example2", type="number", placeholder="news",
-                    min=100, max=100000, step=100,
+                    id="news", type="number", placeholder="news",
+                    min=100, max=100000, step=1,
                     style={'width': '10%'}
                     ),
                     dcc.Input(
-                    id="textarea-state-example3", type="number", placeholder="youtube",
-                    min=100, max=100000, step=100,
+                    id="youtube", type="number", placeholder="youtube",
+                    min=100, max=100000, step=1,
                     style={'width': '10%'}
                     ),
                     dcc.Input(
-                    id="textarea-state-example4", type="number", placeholder="url_shares",
-                    min=100, max=100000, step=100,
+                    id="url_shares", type="number", placeholder="url_shares",
+                    min=100, max=100000, step=1,
                     style={'width': '10%'}
                     ),
-                    html.Button('Submit', id='textarea-state-example-button', n_clicks=0),
-                    html.Div(id='textarea-state-example-output', style={'whiteSpace': 'pre-line'})
+                    html.Hr(),
+                    html.Div(id='output')
                     # html.Div([dcc.Graph(id='data-plot-overview4', figure=genral_fig4)], className='row8'),
                     # html.Div([dcc.Graph(id='data-plot-overview5', figure=genral_fig5)], className='row9'),
                     ]),
@@ -200,7 +198,16 @@ class NoneValueError(Exception):
 
 class TicketSelectError(Exception):
     pass
-
+@app.callback(
+    Output('output', "children"),
+    Input("reddit", "value"),
+    Input("tweets", "value"),
+    Input("news", "value"),
+    Input("youtube", "value"),
+    Input("url_shares", "value"),
+)   
+def number_render(reddit, tweets, news, youtube, url_shares):
+    return u'reddit {}, tweets {}, news {}, youtube {}, url_shares {}'.format(reddit, tweets, news, youtube, url_shares)
 
 
 
@@ -373,37 +380,29 @@ def update_social(selected_ticket):
 #     ])
 
 
-@app.callback(
-    Output('textarea-state-example-output', 'children'),
-    Input('textarea-state-example-button', 'n_clicks'),
-    State('textarea-state-example', 'value'),State('textarea-state-example1', 'value'),State('textarea-state-example2', 'value'),State('textarea-state-example3', 'value'),State('textarea-state-example4', 'value')
-)
-def update_output(n_clicks, value):
-    if n_clicks > 0:
-        return 'You have entered: \n{}'.format(value)
+# @app.callback(
+#     Output('textarea-state-example-output', 'children'),
+#     Input('textarea-state-example-button', 'n_clicks'),
+#     State('input1', 'value'),State('input2', 'value'),State('input3', 'value'),State('input4', 'value'),State('input5', 'value')
+# )
+# def update_output(n_clicks, value):
+#     if n_clicks > 0:
+#         return 'You have entered: \n{}'.format(value)
 
+def update_social(selected_ticket):
+    # load, no need to initialize the loaded_rf
+    rf = joblib.load("../DF_models/BTC_RF.HDF5")
+    #separate inputs and output
+    coin_df_clean = data.loc[data['name'] == 'Bitcoin']
+    target = coin_df_clean['close']
+    inputs = coin_df_clean.drop(columns=["close", "index", "asset_id", "time", "symbol"])
+    #separate inputs and output
+    target = coin_df_clean['close']
+    inputs = coin_df_clean.drop(columns=["close", "index", "asset_id", "time", "symbol"])
+    #predicted value
+    y_pred = rf.predict(input_scaled)
     
-    
-# df3 = df2.loc[:, ['name', 'url_shares_Adj','reddit_posts_Adj','tweets_Adj','news_Adj','youtube_Adj']]
-
-    # df3.rename(columns={
-    # 'url_shares_Adj': 'url_shares',
-    # 'reddit_posts_Adj': 'reddit_posts',
-    # 'tweets_Adj': 'tweets',
-    # 'news_Adj': 'news',
-    # 'youtube_Adj': 'youtube'
-    # }, inplace=True)
-    # from math import pi
-    # categories=list(df3)[1:]
-    # N = len(categories)
-    
-    # r=df3.loc[df3['name']==selected_ticket].drop(columns=['name']).values.flatten().tolist()
-    # df4 = pd.DataFrame(dict(r=r,theta=categories))
-
-    # genral_fig5 = px.line_polar(df4, r='r', theta='theta', line_close=True)    
-
-    # return genral_fig5
-
+    return y_pred
 
 @app.callback(Output('tabs-example-content', 'children'),
               Input('tabs-styled-with-props', 'value'))
