@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 from math import pi
-
 import dash
+import dash_table
 import dash_html_components as html
 import dash_core_components as dcc
 from dash.dependencies import Input, Output, State
@@ -18,13 +18,16 @@ from sqlalchemy import MetaData
 from sqlalchemy import *
 import psycopg2
 from sqlalchemy.orm import create_session
-
-
 from keras.models import Sequential
 from keras.layers import LSTM,Dropout,Dense
-
-
+from keras.models import load_model
+import joblib
 from sklearn.preprocessing import MinMaxScaler
+
+from sklearn.preprocessing import StandardScaler
+from plotly.subplots import make_subplots
+
+
 # from config import db_password
 
 
@@ -40,34 +43,34 @@ app = dash.Dash()
 #url='cryptodb.crgu064gyupd.us-east-2.rds.amazonaws.com'
 #aws_string=f"postgresql://{user_name}:{aws_password}@{url}:5432/postgres"
 #engine = create_engine(aws_string)
-#Create and engine and get the metadata
+##Create and engine and get the metadata
 #Base = declarative_base()
 #metadata = MetaData(bind=engine)
 
-#reflect table
+##reflect table
 #coin = Table('all_coins_data', metadata, autoload=True, autoload_with=engine)
 ##Create a session to use the tables    
 #session = create_session(bind=engine)
 
-#Query database
+##Query database
 #coin_list = session.query(btc).all()
 #coin_df=pd.DataFrame(coin_list)
 #coin_df = coin_df.drop('Unnamed: 0', axis= True)
 #data = coin_df.copy()
 
-data = pd.read_csv('coin_all.csv')
+data_all = pd.read_csv('coin_all.csv')
 
-#top 10 currency based on map 
-data_top_20 = data.loc[data['time'] ==  '2021-01-31']
-df_top_20 = data_top_20.sort_values('market_cap', ascending=False)[:10]
-df_top_20_social = df_top_20[['symbol',
+##top 10 currency based on map 
+data_top_10 = data_all.loc[data_all['time'] ==  '2021-01-31']
+df_top_10 = data_top_10.sort_values('market_cap', ascending=False)[:10]
+df_top_10_social = df_top_10[['symbol',
                              'url_shares',
                              'reddit_posts',
                              'tweets',
                              'news',
                              'youtube']]
 
-df_top_20_social['social impact'] = df_top_20_social.sum(axis=1)
+df_top_10_social['social impact'] = df_top_10_social.sum(axis=1)
 
 
 
@@ -75,9 +78,9 @@ df_top_20_social['social impact'] = df_top_20_social.sum(axis=1)
 #genral_sunburst = px.pie.gapminder()
 
 
-genral_market_cap = px.pie(data_frame = df_top_20, values = 'market_cap',names= 'symbol', hole=.3)
-genral_social_media = px.pie(data_frame = df_top_20_social, values = 'social impact',names = 'symbol', hole=.3)
-genral_price = px.line(data_frame= data, x ='time', y = 'close', color = 'symbol')
+genral_market_cap = px.pie(data_frame = df_top_10, values = 'market_cap',names= 'symbol', hole=.3)
+genral_social_media = px.pie(data_frame = df_top_10_social, values = 'social impact',names = 'symbol', hole=.3)
+genral_price = px.line(data_frame= data_all, x ='time', y = 'close', color = 'symbol')
 
 # setup layout
 app.layout = html.Div([
@@ -93,7 +96,7 @@ app.layout = html.Div([
 
                     dcc.Dropdown(
                         id = 'my-dropdown',
-                        options = [{'label': i, 'value': i}for i in data['symbol'].unique()],
+                        options = [{'label': i, 'value': i}for i in data_all['symbol'].unique()],
                         placeholder = 'please enter ticker'
                     ),
 
@@ -110,8 +113,10 @@ app.layout = html.Div([
                     dcc.Tabs(id='tabs-styled-with-props', value='tab-1', children = [
                         dcc.Tab(label='Acutal Price', value='tab-1',children = [dcc.Graph(id = 'A')]),
                         dcc.Tab(label='Social Impact', value='tab-2',children = [dcc.Graph(id = 'S')]),
-                        dcc.Tab(label = 'LSTM Predicted Price ', value = 'tab-3', children = [dcc.Graph(id = 'L')]),
-                     ]),  
+                        dcc.Tab(label = 'Tim Series Model ', value = 'tab-3', children = [dcc.Loading(id = 'L')]),
+                        dcc.Tab(label='Rondom Forest Model', value='tab-4',children = [dcc.Graph(id = 'D')]),
+
+                    ]),
                     html.Div(id='tabs-example-content')
                 ])
         
@@ -144,7 +149,7 @@ def update_data(start_date, end_date, selected_ticket):
 
 
 
-    new_data =data.loc[data['time'].between(start_date, end_date)]
+    new_data =data_all.loc[data_all['time'].between(start_date, end_date)]
     new_data_1 = new_data.loc[new_data['symbol'] == selected_ticket]
     line_fig = px.line(new_data_1,
                     x='time', y='close',
@@ -166,7 +171,7 @@ def update_data(start_date, end_date, selected_ticket):
 
 def update_social(start_date, end_date,selected_ticket):
 
-    new_data =data.loc[data['time'].between(start_date, end_date)]
+    new_data =data_all.loc[data_all['time'].between(start_date, end_date)]
     new_data_1 = new_data.loc[new_data['symbol'] == selected_ticket]
 
     new_data_1 = new_data_1[['url_shares','reddit_posts','tweets','news','youtube']].apply(pd.to_numeric)
@@ -193,81 +198,150 @@ def update_social(start_date, end_date,selected_ticket):
         'news_Adj': 'news',
         'youtube_Adj': 'youtube'
     }, inplace=True)
-
-
-    categories=list(df3)[1:]
-    N = len(categories)
-    
+    #categories=list(df3)[1:]
     # We are going to plot the first line of the data frame.
     # But we need to repeat the first value to close the circular graph:
-
-
     sum_column = df3.sum(axis=0)
-
-
-    fig = px.line_polar(sum_column, r = list(sum_column), theta= list(df3)[0:], line_close=True)
-    fig.update_traces(fill='toself')
-    return fig
+    fig_radar = px.line_polar(sum_column, r = list(sum_column), theta= list(df3)[0:], line_close=True)
+    fig_radar.update_traces(fill='toself')
+    return fig_radar
 
 
 # model 
 @app.callback(
-    Output(component_id='l', component_property='figure'),
+    Output(component_id='L', component_property='children'),
     [
-    Input(component_id='date-picker-range', component_property='start_date'),
-    Input(component_id='date-picker-range', component_property='end_date'),
     Input(component_id='my-dropdown', component_property='value')]
     )
 
-def update_LSTM(start_date, end_date,selected_ticket):
-    new_data = data[['time','symbol','close']]
-    new_data =new_data.loc[data['time'].between(start_date, end_date)]
-    new_data_1 = new_data.loc[new_data['symbol'] == selected_ticket]
+def update_LSTM(selected_ticket):
+    data =  data_all.loc[data_all['symbol']== selected_ticket]
+    coin_df=data[['time', 'close']].copy()
 
-    new_data_2 = new_data_1.copy()
-    new_data_2.index = new_data_2.time
-    new_data_2.drop('time', axis=1, inplace=True)
-    new_data_2.drop('symbol', axis=1, inplace= True)
-    final_dataset = new_data_2['close'].values.reshape(-1,1)
-    train_data=final_dataset[0:int(len(final_dataset)*0.80)]
-    valid_data=final_dataset[int(len(final_dataset)*0.80):]
-    scaler = MinMaxScaler()
-    #Scale the data
-    scaler.fit(train_data)
-    scaled_data =scaler.transform(final_dataset.values.reshape(-1,1))
+    path_lstm = 'LSTM_models/'+selected_ticket+'_LSTM.h5'
+    modle_lstm = load_model(path_lstm)
+
+    cl = coin_df.close.astype('float32')
+    train = cl[0:int(len(cl)*0.80)]
+    scl = MinMaxScaler()
+
+    def processData(coin_df,lb):
+        X,Y = [],[]
+        for i in range(len(coin_df)-lb-1):
+            X.append(coin_df[i:(i+lb),0])
+            Y.append(coin_df[(i+lb),0])
+        return np.array(X),np.array(Y)
+        lb=10
+        X,y = processData(cl,lb)
+        X_train,X_test = X[:int(X.shape[0]*0.90)],X[int(X.shape[0]*0.90):]
+        y_train,y_test = y[:int(y.shape[0]*0.90)],y[int(y.shape[0]*0.90):]
+
+        modle_lstm.fit(X_train,y_train,epochs=100,validation_data=(X_test,y_test),shuffle=False)
+
+        list1 = scl.inverse_transform(y_train.reshape(-1,1)).tolist()
+        list2 = scl.inverse_transform(X_test).tolist()
+        test=pd.DataFrame(list1)
+        test2=pd.DataFrame(list2)
+  
+        test_merge = test.merge(test2, left_index=True, right_index=True)
+        test_merge.columns=['Predicted', 'Actual']
+        genral_fig = make_subplots(specs=[[{"secondary_y": True}]])
+        genral_fig.add_trace(
+            go.Scatter(y=test_merge['Predicted'], x=test_merge.index, name="Predicted"),
+            secondary_y=False,
+            )
+        genral_fig.add_trace(
+            go.Scatter(y=test_merge['Actual'], x=test_merge.index, name="Actual"),
+            secondary_y=True,
+            )
+
+
+
+        return genral_fig
+
+
+
+
+
+
+
+
+
+    
+    
+    
+    #scaler = MinMaxScaler()
+    #last 60 days closing price values and convert the dataframe to an array
+    #last_60_days = new_df[-60:].values
+    # Scale he data to be values between 0 and 1
+    #last_60_days_scaled = scaler.fit_transform(last_60_days)
+    #X_test = []
+    #X_test.append(last_60_days_scaled)
+    #X_test = np.array(X_test)
+    #X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1], 1))
+    #path_lstm = 'LSTM_models/'+selected_ticket+'_LSTM.h5'
+    #modle_lstm = load_model(path_lstm)
     
 
+    #showing next business day price
+    #pred_price_lstm = modle_lstm.predict(X_test)
+    #pred_price_lstm = scaler.inverse_transform(pred_price_lstm)
+    #pred_price_lstm = pred_price_lstm[0][0]
     
-    x_train_data,y_train_data=[],[]
-    for i in range(10,len(train_data)):
-        x_train_data.append(scaled_data[i-10:i,0])
-        y_train_data.append(scaled_data[i,0])
-        
-    x_train_data,y_train_data=np.array(x_train_data),np.array(y_train_data)
-    x_train_data=np.reshape(x_train_data,(x_train_data.shape[0],x_train_data.shape[1],1))
-    model=load_model("saved_model.h5")
+    # showing plot with actual price and predict price 
+    
 
-    inputs_data=new_data_2[len(new_data_2)-len(valid_data)-10:].values
-    inputs_data=inputs_data.reshape(-1,1)
-    inputs_data=scaler.transform(inputs_data)
+    ## ARIMA model price prediction 
 
-    X_test=[]
-    for i in range(10,inputs_data.shape[0]):
-        X_test.append(inputs_data[i-10:i,0])
-    X_test=np.array(X_test)
+    #path_arima = 'ARIMA_models/'+selected_ticket+'_ARIMA.h5'    
+    #Arima_model = joblib.load(path_arima)
+    #xt = Arima_model.forecast()
+    return genral_fig
 
-    X_test=np.reshape(X_test,(X_test.shape[0],X_test.shape[1],1))
-    closing_price=model.predict(X_test)
-    closing_price=scaler.inverse_transform(closing_price)
 
-    train=new_data_2[0:int(len(final_dataset)*0.80)]
-    valid=new_data_2[int(len(final_dataset)*0.80):]
-    valid['Predictions']=closing_price
 
-    line_fig_LSTM = px.line(new_data_2,
-                            x= train.index, y=valid["Predictions"],mode = 'markers',
-                            title ='LSTM')
-    return line_fig_LSTM
+@app.callback(
+    Output(component_id='D', component_property='figture'),
+    [
+    Input(component_id='my-dropdown', component_property='value')]
+    )
+
+def update_DF(selected_ticket):
+    
+    new_data = data_all.loc[data_all['symbol'] == selected_ticket]
+
+    target = new_data['close']
+    inputs = new_data.drop(columns=["close", "index", "asset_id", "time", "symbol"])
+
+    # Create a StandardScaler instance
+    scaler = StandardScaler()
+    # Fit the StandardScaler
+    input_scaler = scaler.fit(inputs)
+    input_scaled = input_scaler.transform(inputs)
+    #predicted value
+    load_model = joblib.load('DF_models/'+selected_ticket+'_RF.HDF5')
+    y_pred = load_model.predict(input_scaled)
+    prices_df =pd.DataFrame(list(zip(y_pred,target)), columns=['Predicted', 'Actual'])
+
+
+    fig = px.scatter(prices_df, x = 'actual', y = 'Predicted')
+
+   
+    return fig
+
+    #plot compare predicted vs real
+   
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -283,6 +357,9 @@ def render_content(tab):
         return html.Div([
         ])
     elif tab == 'tab-3':
+        return html.Div([
+        ])
+    elif tab == 'tab-4':
         return html.Div([
 
         ])
