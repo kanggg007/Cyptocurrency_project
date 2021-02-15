@@ -114,7 +114,7 @@ app.layout = html.Div([
                         dcc.Tab(label='Acutal Price', value='tab-1',children = [dcc.Graph(id = 'A')]),
                         dcc.Tab(label='Social Impact', value='tab-2',children = [dcc.Graph(id = 'S')]),
                         dcc.Tab(label = 'Tim Series Model ', value = 'tab-3', children = [dcc.Graph(id = 'L')]),
-                        dcc.Tab(label='Rondom Forest Model', value='tab-4',children = [dcc.Graph(id = 'D')]),
+                        dcc.Tab(label='Rondom Forest Model', value='tab-4',children = [dcc.Graph(id = 'random-forest')])
 
                     ]),
                     html.Div(id='tabs-example-content')
@@ -125,19 +125,6 @@ app.layout = html.Div([
                     #dcc.Graph(id= 'n')
     ])
         
-
-class StartDateError(Exception):
-    pass
-
-class NoneValueError(Exception):
-    pass
-
-class TicketSelectError(Exception):
-    pass
-
-
-
-
 @app.callback(
     Output(component_id='A', component_property='figure'),
     [
@@ -222,7 +209,7 @@ def update_LSTM(selected_ticket):
     cl = coin_df.close.astype('float32')
     train = cl[0:int(len(cl)*0.80)]
     scl = MinMaxScaler()
-            #Scale the data
+    #Scale the data
     scl.fit(train.values.reshape(-1,1))
     cl =scl.transform(cl.values.reshape(-1,1))
         #Create a function to process the data into lb observations look back slices
@@ -308,30 +295,41 @@ def update_LSTM(selected_ticket):
 
 
 @app.callback(
-    Output(component_id='D', component_property='figture'),
+    Output(component_id='random-forest', component_property='figture'),
     [
     Input(component_id='my-dropdown', component_property='value')]
     )
 
 def update_DF(selected_ticket):
-    
     new_data = data_all.loc[data_all['symbol'] == selected_ticket]
+    new_data = new_data.dropna()
+    new_data.drop('Unnamed: 0', axis=1, inplace= True)
 
     target = new_data['close']
     inputs = new_data.drop(columns=["close", "index", "asset_id", "time", "symbol"])
-
+    from sklearn.preprocessing import StandardScaler
     # Create a StandardScaler instance
     scaler = StandardScaler()
     # Fit the StandardScaler
     input_scaler = scaler.fit(inputs)
     input_scaled = input_scaler.transform(inputs)
     #predicted value
-    load_model = joblib.load('DF_models/'+selected_ticket+'_RF.HDF5')
+    load_model = joblib.load('DF_models/BTC_RF.HDF5')
     y_pred = load_model.predict(input_scaled)
     prices_df =pd.DataFrame(list(zip(y_pred,target)), columns=['Predicted', 'Actual'])
+    import plotly.graph_objects as go
+    import plotly.graph_objects as go
 
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            y=prices_df['Actual']
+        ))
 
-    fig = px.scatter(prices_df, x = 'actual', y = 'Predicted')
+    fig.add_trace(
+        go.Scatter(
+            y=prices_df['Predicted']
+        ))
 
    
     return fig
