@@ -30,6 +30,8 @@ from keras.layers import Dense
 from sklearn.preprocessing import MinMaxScaler
 from statsmodels.tsa.arima_model import ARIMA
 from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor
 # data =  pd.read_csv('test_data')
 
 # from config import db_password
@@ -92,6 +94,7 @@ for factor in factors:
 
   
 # Model loading  
+coin_df = data.loc[(data['name']=='Bitcoin')]
 coin_df = coin_df[['time', 'close']].copy()
 coin_df.index=coin_df['time']        
     
@@ -112,7 +115,7 @@ X,y = processData(cl,lb)
 X_train,X_test = X[:int(X.shape[0]*0.90)],X[int(X.shape[0]*0.90):]
 y_train,y_test = y[:int(y.shape[0]*0.90)],y[int(y.shape[0]*0.90):]
     
-path_lstm = 'LSTM_models/ETH_LSTM.h5'
+path_lstm = 'LSTM_models/BTC_LSTM.h5'
 model = load_model(path_lstm)
     
 
@@ -168,32 +171,42 @@ genral_fig7.add_trace(
     )
 
 # #Random Forest
-# new_data = data.loc[data['name'] == 'Bitcoin']
-# new_data = new_data.dropna()
-# # new_data.drop('Unnamed: 0', axis=1, inplace= True)
-# target = new_data['close']
-# inputs = new_data[['url_shares','reddit_posts','tweets','news','youtube']].copy()
-
+coin_df2 = data.loc[data['name'] == 'Bitcoin']
+coin_df2 = coin_df2.dropna()
+# new_data.drop('Unnamed: 0', axis=1, inplace= True)
+target = coin_df2['close']
+inputs = coin_df2[['url_shares','reddit_posts','tweets','news','youtube']].copy()
+y=target#.values
+X=inputs#.values
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=1)
 # # Create a StandardScaler instance
-# scaler = StandardScaler()
-# # Fit the StandardScaler
-# input_scaler = scaler.fit(inputs)
-# input_scaled = input_scaler.transform(inputs)
-#     #predicted value
-# # path_b = 'DF_models/BTC_RF.HDF5'
+scaler = StandardScaler()
+# Fit the StandardScaler
+X_scaler = scaler.fit(X_train)
+X_train_scaled = X_scaler.transform(X_train)
+X_test_scaled = X_scaler.transform(X_test)
 
-# # load_model = joblib.load(path_a)
-# y_pred = load_model.predict(input_scaled)
-# prices_df =pd.DataFrame(list(zip(y_pred,target)), columns=['Predicted', 'Actual'])
-# fig8 = go.Figure()
-# fig8.add_trace(
-#         go.Scatter(
-#             y=prices_df['Actual']
-#         ))
-# fig8.add_trace(
-#         go.Scatter(
-#             y=prices_df['Predicted']
-#         ))
+# scaler = X_scaler.transform(X_test)
+rf_model = RandomForestRegressor(n_estimators=128, random_state=78)
+rf_model = rf_model.fit(X_train_scaled, y_train)
+
+input_scaler = scaler.fit(inputs)
+input_scaled = input_scaler.transform(inputs)
+#     #predicted value
+# path_b = 'DF_models/BTC_RF.HDF5'
+# import joblib
+# load_model = joblib.load('DF/BTC_RF.HDF5')
+y_pred = rf_model.predict(input_scaled)
+prices_df =pd.DataFrame(list(zip(y_pred,target)), columns=['Predicted', 'Actual'])
+fig8 = go.Figure()
+fig8.add_trace(
+        go.Scatter(
+            y=prices_df['Actual']
+        ))
+fig8.add_trace(
+        go.Scatter(
+            y=prices_df['Predicted']
+        ))
 
 
 
@@ -208,9 +221,18 @@ app.layout = html.Div([
                     html.Div([dcc.Graph(id='data-plot-overview', figure=genral_fig)], className='row3'),
                     html.Div([dcc.Graph(id='data-plot-overview2', figure=genral_fig2)], className='row4'),
                     html.Div([dcc.Graph(id='data-plot-overview3', figure=genral_fig3)], className='row5'),
-                    # html.Div([dcc.Graph(id='data-plot-overview4', figure=genral_fig6)], className='row6'),
+                    html.H3(
+                        children = 'Bitcoin LSTM Model',
+                    ),
+                    html.Div([dcc.Graph(id='data-plot-overview4', figure=genral_fig6)], className='row6'),
+                    html.H3(
+                        children = 'Bitcoin ARIMA Model',
+                    ),
                     html.Div([dcc.Graph(id='data-plot-overview5', figure=genral_fig7)], className='row7'),
-                    # html.Div([dcc.Graph(id='data-plot-overview6', figure=fig8)], className='row86'),
+                    html.H3(
+                        children = 'Bitcoin Random Forest Model',
+                    ),
+                    html.Div([dcc.Graph(id='data-plot-overview6', figure=fig8)], className='row86'),
                     html.H3(
                         children = 'Select Cryptocurrency',
                         style = {
@@ -239,57 +261,57 @@ app.layout = html.Div([
                         children = 'Submit',
                         n_clicks = 0,  
                     ),
-                    html.H3(
-                        children = 'Enter social media volume',
-                        style = {
-                            'textAlign': 'left'
-                        }
-                    ),
-                    html.Div([
-                    # dcc.Input(id="dfalse", type="number", placeholder="Debounce False"),
-                    # dcc.Input(
-                    #     id="dtrue", type="number",
-                    #     debounce=True, placeholder="Debounce True",
+                    # html.H3(
+                    #     children = 'Enter social media volume',
+                    #     style = {
+                    #         'textAlign': 'left'
+                    #     }
                     # ),
-                    html.Br(),
-                    dcc.Input(
-                    id="reddit", type="number", placeholder="reddit posts",
-                    min=100, max=100000, step=1,
-                    style={'width': '10%'}
-                    ),
-                    dcc.Input(
-                    id="tweets", type="number", placeholder="tweets",
-                    min=100, max=100000, step=1,
-                    style={'width': '10%'}
-                    ),
-                    dcc.Input(
-                    id="news", type="number", placeholder="news",
-                    min=100, max=100000, step=1,
-                    style={'width': '10%'}
-                    ),
-                    dcc.Input(
-                    id="youtube", type="number", placeholder="youtube",
-                    min=100, max=100000, step=1,
-                    style={'width': '10%'}
-                    ),
-                    dcc.Input(
-                    id="url_shares", type="number", placeholder="url_shares",
-                    min=100, max=100000, step=1,
-                    style={'width': '10%'}
-                    ),
-                    html.Hr(),
-                    html.Div(id='output')
-                    # html.Div([dcc.Graph(id='data-plot-overview4', figure=genral_fig4)], className='row8'),
-                    # html.Div([dcc.Graph(id='data-plot-overview5', figure=genral_fig5)], className='row9'),
-                    ]),
+                    # html.Div([
+                    # # dcc.Input(id="dfalse", type="number", placeholder="Debounce False"),
+                    # # dcc.Input(
+                    # #     id="dtrue", type="number",
+                    # #     debounce=True, placeholder="Debounce True",
+                    # # ),
+                    # html.Br(),
+                    # dcc.Input(
+                    # id="reddit", type="number", placeholder="reddit posts",
+                    # min=100, max=100000, step=1,
+                    # style={'width': '10%'}
+                    # ),
+                    # dcc.Input(
+                    # id="tweets", type="number", placeholder="tweets",
+                    # min=100, max=100000, step=1,
+                    # style={'width': '10%'}
+                    # ),
+                    # dcc.Input(
+                    # id="news", type="number", placeholder="news",
+                    # min=100, max=100000, step=1,
+                    # style={'width': '10%'}
+                    # ),
+                    # dcc.Input(
+                    # id="youtube", type="number", placeholder="youtube",
+                    # min=100, max=100000, step=1,
+                    # style={'width': '10%'}
+                    # ),
+                    # dcc.Input(
+                    # id="url_shares", type="number", placeholder="url_shares",
+                    # min=100, max=100000, step=1,
+                    # style={'width': '10%'}
+                    # ),
+                    # html.Hr(),
+                    # html.Div(id='output')
+                    # # html.Div([dcc.Graph(id='data-plot-overview4', figure=genral_fig4)], className='row8'),
+                    # # html.Div([dcc.Graph(id='data-plot-overview5', figure=genral_fig5)], className='row9'),
+                    # ]),
                     html.Div([
                     dcc.Tabs(id='tabs-styled-with-props', value='tab-1', children = [
                         dcc.Tab(label='Acutal Price', value='tab-1',children = [dcc.Graph(id = 'm')]),
                         dcc.Tab(label='Social Radar', value='tab-2',children = [dcc.Graph(id = 'i')]),
                         dcc.Tab(label='Social Impact', value='tab-3',children = [dcc.Graph(id = 'n')]),
-                        dcc.Tab(label = 'LSTM Predicted Price ', value = 'tab-4', children = [dcc.Graph(id = 'l')]),
-                        dcc.Tab(label = 'Arima Predicted Price ', value = 'tab-5', children = [dcc.Graph(id = 'k')]),
-                        dcc.Tab(label = 'Random Forest Predicted Price ', value = 'tab-6'),
+                        # dcc.Tab(label = 'LSTM Predicted Price ', value = 'tab-4', children = [dcc.Graph(id = 'l')]),
+                        # dcc.Tab(label = 'Arima Predicted Price ', value = 'tab-5', children = [dcc.Graph(id = 'k')]),
+                        # dcc.Tab(label = 'Random Forest Predicted Price ', value = 'tab-6'),
                         
                         ]),  
                     html.Div(id='tabs-example-content'),
