@@ -28,6 +28,8 @@ from sklearn.preprocessing import StandardScaler
 from plotly.subplots import make_subplots
 
 
+
+
 # from config import db_password
 
 
@@ -113,8 +115,9 @@ app.layout = html.Div([
                     dcc.Tabs(id='tabs-styled-with-props', value='tab-1', children = [
                         dcc.Tab(label='Acutal Price', value='tab-1',children = [dcc.Graph(id = 'A')]),
                         dcc.Tab(label='Social Impact', value='tab-2',children = [dcc.Graph(id = 'S')]),
-                        dcc.Tab(label = 'Tim Series Model ', value = 'tab-3', children = [dcc.Graph(id = 'L')]),
-                        dcc.Tab(label='Rondom Forest Model', value='tab-4',children = [dcc.Graph(id = 'random-forest')])
+                        dcc.Tab(label = ' LSTM Time Series Model ', value = 'tab-3', children = [dcc.Graph(id = 'L')]),
+                        dcc.Tab(label = 'Arima Time Series Model ', value = 'tab-4', children = [dcc.Graph(id = 'Arima')]),
+                        dcc.Tab(label='Rondom Forest Model', value='tab-5',children = [dcc.Graph(id = 'random-forest')]),
 
                     ]),
                     html.Div(id='tabs-example-content')
@@ -293,6 +296,37 @@ def update_LSTM(selected_ticket):
 
 
 
+@app.callback(
+    Output(component_id='Arima', component_property='figure'),
+    [
+    Input(component_id='my-dropdown', component_property='value')]
+    )
+
+
+def update_arima(selected_ticket):
+    coin_df = data_all.loc[(data_all['symbol']=='selected_ticket')]
+    coin_df = coin_df[['time', 'close']].copy()
+    coin_df.index=coin_df['time']
+    df_close = coin_df['close']
+    df_log = np.log(df_close)
+    train_data, test_data = df_log[3:int(len(df_log)*0.9)], df_log[int(len(df_log)*0.9):]
+    path_a = 'ARIMA_models/'+selected_ticket+'_ARIMA.h5'
+    model_a = joblib.load(path_a)
+    #fitted = model_a.fit(disp=-1)  
+    fc = model_a.forecast(72, alpha=0.05)  # 95% confidence
+    fc_series = pd.Series(fc, index=test_data.index)
+    test_data=pd.DataFrame(test_data)
+    train_data=pd.DataFrame(train_data)
+    fc_series=pd.DataFrame(fc_series)
+    genral_fig7 = make_subplots(specs=[[{"secondary_y": False}]])
+    genral_fig7.add_trace(go.Scatter(y=test_data['close'], x=test_data.index, name="Actual Price"),secondary_y=False,)
+    genral_fig7.add_trace(go.Scatter(y=train_data['close'], x=train_data.index, name="Training"),secondary_y=False,)
+    genral_fig7.add_trace(go.Scatter(y=fc_series[0], x=fc_series.index, name="Predicted Price"),secondary_y=False,)
+
+    return genral_fig7
+
+
+
 
 @app.callback(
     Output(component_id='random-forest', component_property='figture'),
@@ -311,47 +345,32 @@ def update_DF(selected_ticket):
     # Create a StandardScaler instance
     scaler = StandardScaler()
     # Fit the StandardScaler
-    input_scaler = scaler.fit(inputs)
-    input_scaled = input_scaler.transform(inputs)
+    input_scaler = scaler.fit_transform(inputs)
+    #input_scaled = input_scaler.transform(inputs)
     #predicted value
     load_model = joblib.load('DF_models/BTC_RF.HDF5')
-    y_pred = load_model.predict(input_scaled)
+    y_pred = load_model.predict(input_scaler)
     prices_df =pd.DataFrame(list(zip(y_pred,target)), columns=['Predicted', 'Actual'])
-    import plotly.graph_objects as go
-    import plotly.graph_objects as go
 
     fig = go.Figure()
     fig.add_trace(
         go.Scatter(
-            y=prices_df['Actual']
+            y=prices_df['Actual'],
+            title = 'Actual'
         ))
 
     fig.add_trace(
         go.Scatter(
-            y=prices_df['Predicted']
+            y=prices_df['Predicted'],
+            title = 'Predicted'
         ))
 
-   
+    
+    fig.show()
     return fig
 
     #plot compare predicted vs real
    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 @app.callback(Output('tabs-example-content', 'children'),
               Input('tabs-styled-with-props', 'value'))
 def render_content(tab):
@@ -366,8 +385,11 @@ def render_content(tab):
         ])
     elif tab == 'tab-4':
         return html.Div([
-
         ])
+    elif tab == 'tab-5':
+        return html.Div([
+    ])
+   
    
 
 
