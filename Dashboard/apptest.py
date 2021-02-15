@@ -23,6 +23,12 @@ from sklearn.preprocessing import MinMaxScaler
 import joblib
 from config2 import db_password, user_name, aws_password
 from dash.dependencies import Input, Output
+import keras
+from keras import Sequential
+from keras.layers import LSTM
+from keras.layers import Dense
+from sklearn.preprocessing import MinMaxScaler
+
 
 # data =  pd.read_csv('test_data')
 
@@ -84,6 +90,62 @@ for factor in factors:
   df2[factor + '_Adj'] = df2[factor].apply(
       lambda x: (((x - min_val) * new_range) / val_range) + new_min)
 
+  
+# Model loading  
+    # loaded_model = joblib.load('../LSTM_models/BTC_LSTM.h5')
+    # result = as
+    # new_data = pd.read_csv('test_data')[['time','name','close']]
+    # new_data =new_data.loc[data['time'].between(start_date, end_date)]
+coin_df = data.loc[(data['name']=='Bitcoin')]
+coin_df = coin_df.dropna()
+coin_df = coin_df[['time', 'close']].copy()
+    
+    
+cl = coin_df.close.astype('float32')
+train = cl[0:int(len(cl)*0.80)]
+scl = MinMaxScaler()
+        #Scale the data
+scl.fit(train.values.reshape(-1,1))
+cl =scl.transform(cl.values.reshape(-1,1))
+    #Create a function to process the data into lb observations look back slices
+    # and create the train test dataset (90-10)
+def processData(coin_df,lb):
+    X,Y = [],[]
+    for i in range(len(coin_df)-lb-1):
+        X.append(coin_df[i:(i+lb),0])
+        Y.append(coin_df[(i+lb),0])
+    return np.array(X),np.array(Y)
+lb=10
+X,y = processData(cl,lb)
+X_train,X_test = X[:int(X.shape[0]*0.90)],X[int(X.shape[0]*0.90):]
+y_train,y_test = y[:int(y.shape[0]*0.90)],y[int(y.shape[0]*0.90):]
+    
+path_lstm = 'LSTM_models/ETH_LSTM.h5'
+model = load_model(path_lstm)
+    
+# model = Sequential()
+# model.add(LSTM(256,input_shape=(lb,1)))
+# model.add(Dense(1))
+# model.compile(optimizer='adam',loss='mse')
+    # #Reshape data for (Sample,Timestep,Features) 
+X_train = X_train.reshape((X_train.shape[0],X_train.shape[1],1))
+X_test = X_test.reshape((X_test.shape[0],X_test.shape[1],1))
+    #Fit model with history to check for overfitting
+model.fit(X_train,y_train,epochs=100,validation_data=(X_test,y_test),shuffle=False)
+    # model.summary() 
+
+    # # plt.figure(figsize=(12,8))
+Xt = model.predict(X_train)
+list1 = scl.inverse_transform(y_test.reshape(-1,1)).tolist()
+list2 = scl.inverse_transform(Xt).tolist()
+test=pd.DataFrame(list1)
+test2=pd.DataFrame(list2)   
+test_merge = test.merge(test2, left_index=True, right_index=True)
+test_merge.columns=['Predicted', 'Actual']
+genral_fig6 = make_subplots(specs=[[{"secondary_y": True}]])
+genral_fig6.add_trace(go.Scatter(y=test_merge['Predicted'], x=test_merge.index, name="Predicted"),secondary_y=False,)
+
+genral_fig6.add_trace(go.Scatter(y=test_merge['Actual'], x=test_merge.index, name="Actual"),secondary_y=True,)
 
 # setup layout
 app.layout = html.Div([
@@ -96,7 +158,7 @@ app.layout = html.Div([
                     html.Div([dcc.Graph(id='data-plot-overview', figure=genral_fig)], className='row3'),
                     html.Div([dcc.Graph(id='data-plot-overview2', figure=genral_fig2)], className='row4'),
                     html.Div([dcc.Graph(id='data-plot-overview3', figure=genral_fig3)], className='row5'),
-                    
+                    html.Div([dcc.Graph(id='data-plot-overview4', figure=genral_fig6)], className='row6'),
                     html.H3(
                         children = 'Select Cryptocurrency',
                         style = {
@@ -282,10 +344,9 @@ def update_social(selected_ticket):
     [
     # Input(component_id='date-picker-range', component_property='start_date'),
     # Input(component_id='date-picker-range', component_property='end_date'),
-    Input(component_id='my-dropdown', component_property='value')]
-    )
+    Input(component_id='my-dropdown', component_property='value')])
 
-def update_social(selected_ticket):
+def update_social3(selected_ticket):
     df3 = df2.loc[:, ['name', 'url_shares_Adj','reddit_posts_Adj','tweets_Adj','news_Adj','youtube_Adj']]
 
     df3.rename(columns={
@@ -297,7 +358,7 @@ def update_social(selected_ticket):
     }, inplace=True)
     from math import pi
     categories=list(df3)[1:]
-    N = len(categories)
+    # N = len(categories)
     
     r=df3.loc[df3['name']==selected_ticket].drop(columns=['name']).values.flatten().tolist()
     df4 = pd.DataFrame(dict(r=r,theta=categories))
@@ -309,24 +370,26 @@ def update_social(selected_ticket):
 @app.callback(
     Output(component_id='l', component_property='figure'),
     [
-    Input(component_id='date-picker-range', component_property='start_date'),
-    Input(component_id='date-picker-range', component_property='end_date'),
+    # Input(component_id='date-picker-range', component_property='start_date'),
+    # Input(component_id='date-picker-range', component_property='end_date'),
     Input(component_id='my-dropdown', component_property='value')]
     )
 
 # def update_LSTM(selected_ticket):
     # model_imported = tf.keras.models.load_model("../../LSTM_models/BTC_LSTM.H5")
 
-    # loaded_model = joblib.load('../../LSTM_models/BTC_LSTM)
-    # result = as
-    # new_data = pd.read_csv('test_data')[['time','name','close']]
-    # new_data =new_data.loc[data['time'].between(start_date, end_date)]
-    # data_1 = data.loc[data['name'] == selected_ticket]
-    # data_1 =data_1.dropna()
-    # data_1=data_1[['time', 'close']].copy()
     
-    # from sklearn.preprocessing import MinMaxScaler
-    # cl = data_1_clean.close.astype('float32')
+    
+    # loaded_model = joblib.load('../LSTM_models/BTC_LSTM.h5')
+    # # result = as
+    # # new_data = pd.read_csv('test_data')[['time','name','close']]
+    # # new_data =new_data.loc[data['time'].between(start_date, end_date)]
+    # coin_df = data.loc[(data['name']=='Bitcoin')]
+    # coin_df = coin_df.dropna()
+    # coin_df = coin_df[['time', 'close']].copy()
+    
+    
+    # cl = coin_df.close.astype('float32')
     # train = cl[0:int(len(cl)*0.80)]
     # scl = MinMaxScaler()
     #     #Scale the data
@@ -344,31 +407,34 @@ def update_social(selected_ticket):
     # X,y = processData(cl,lb)
     # X_train,X_test = X[:int(X.shape[0]*0.90)],X[int(X.shape[0]*0.90):]
     # y_train,y_test = y[:int(y.shape[0]*0.90)],y[int(y.shape[0]*0.90):]
+    
+    # path_lstm = '../LSTM_models/BTC_LSTM.h5'
+    # modle_lstm = load_model(path_lstm)
 
-    # import keras
-    # from keras import Sequential
-    # from keras.layers import LSTM
-    # from keras.layers import Dense
-
-    # model = Sequential()
-    # model.add(LSTM(256,input_shape=(lb,1)))
-    # model.add(Dense(1))
-    # model.compile(optimizer='adam',loss='mse')
-    # #Reshape data for (Sample,Timestep,Features) 
-    # X_train = X_train.reshape((X_train.shape[0],X_train.shape[1],1))
-    # X_test = X_test.reshape((X_test.shape[0],X_test.shape[1],1))
+    # # model = Sequential()
+    # # model.add(LSTM(256,input_shape=(lb,1)))
+    # # model.add(Dense(1))
+    # # model.compile(optimizer='adam',loss='mse')
+    # # #Reshape data for (Sample,Timestep,Features) 
+    # # X_train = X_train.reshape((X_train.shape[0],X_train.shape[1],1))
+    # # X_test = X_test.reshape((X_test.shape[0],X_test.shape[1],1))
     # #Fit model with history to check for overfitting
-    # history = model.fit(X_train,y_train,epochs=100,validation_data=(X_test,y_test),shuffle=False)
-    # plt.figure(figsize=(12,8))
-    # Xt = model.predict(X_train)
-    # plt.plot(scl.inverse_transform(y_train.reshape(-1,1)), label="Actual")
-    # plt.plot(scl.inverse_transform(Xt), label="Predicted")
-    # plt.legend()
-    # plt.title("Train Dataset")  
-    # line_fig_LSTM = go.line(new_data_2,
-    #                         x= train.index, y=valid["Predictions"],mode = 'markers',
-    #                         title ='LSTM')
-    # return line_fig_LSTM
+    # modle_lstm.fit(X_train,y_train,epochs=100,validation_data=(X_test,y_test),shuffle=False)
+    # # model.summary() 
+
+    # # # plt.figure(figsize=(12,8))
+    # Xt = modle_lstm.predict(X_train)
+    # list1 = scl.inverse_transform(y_test.reshape(-1,1)).tolist()
+    # list2 = scl.inverse_transform(Xt).tolist()
+    # test=pd.DataFrame(list1)
+    # test2=pd.DataFrame(list2)   
+    # test_merge = test.merge(test2, left_index=True, right_index=True)
+    # test_merge.columns=['Predicted', 'Actual']
+    # genral_fig6 = make_subplots(specs=[[{"secondary_y": True}]])
+    # genral_fig6.add_trace(go.Scatter(y=test_merge['Predicted'], x=test_merge.index, name="Predicted"),secondary_y=False,)
+
+    # genral_fig6.add_trace(go.Scatter(y=test_merge['Actual'], x=test_merge.index, name="Actual"),secondary_y=True,)
+    # return genral_fig6
 
 #  app.layout = html.Div([
 #     dcc.Textarea(
@@ -389,20 +455,20 @@ def update_social(selected_ticket):
 #     if n_clicks > 0:
 #         return 'You have entered: \n{}'.format(value)
 
-def update_social(selected_ticket):
+# def update_social2(selected_ticket):
     # load, no need to initialize the loaded_rf
-    rf = joblib.load("../DF_models/BTC_RF.HDF5")
-    #separate inputs and output
-    coin_df_clean = data.loc[data['name'] == 'Bitcoin']
-    target = coin_df_clean['close']
-    inputs = coin_df_clean.drop(columns=["close", "index", "asset_id", "time", "symbol"])
-    #separate inputs and output
-    target = coin_df_clean['close']
-    inputs = coin_df_clean.drop(columns=["close", "index", "asset_id", "time", "symbol"])
-    #predicted value
-    y_pred = rf.predict(input_scaled)
+    # rf = joblib.load("../DF_models/BTC_RF.HDF5")
+    # #separate inputs and output
+    # coin_df_clean = data.loc[data['name'] == 'Bitcoin']
+    # target = coin_df_clean['close']
+    # inputs = coin_df_clean.drop(columns=["close", "index", "asset_id", "time", "symbol"])
+    # #separate inputs and output
+    # target = coin_df_clean['close']
+    # inputs = coin_df_clean.drop(columns=["close", "index", "asset_id", "time", "symbol"])
+    # #predicted value
+    # # y_pred = rf.predict(input_scaled)
     
-    return y_pred
+    # # return y_pred
 
 @app.callback(Output('tabs-example-content', 'children'),
               Input('tabs-styled-with-props', 'value'))
