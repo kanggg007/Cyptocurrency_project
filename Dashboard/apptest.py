@@ -113,7 +113,7 @@ app.layout = html.Div([
                     dcc.Tabs(id='tabs-styled-with-props', value='tab-1', children = [
                         dcc.Tab(label='Acutal Price', value='tab-1',children = [dcc.Graph(id = 'A')]),
                         dcc.Tab(label='Social Impact', value='tab-2',children = [dcc.Graph(id = 'S')]),
-                        dcc.Tab(label = 'Tim Series Model ', value = 'tab-3', children = [dcc.Loading(id = 'L')]),
+                        dcc.Tab(label = 'Tim Series Model ', value = 'tab-3', children = [dcc.Graph(id = 'L')]),
                         dcc.Tab(label='Rondom Forest Model', value='tab-4',children = [dcc.Graph(id = 'D')]),
 
                     ]),
@@ -209,57 +209,64 @@ def update_social(start_date, end_date,selected_ticket):
 
 # model 
 @app.callback(
-    Output(component_id='L', component_property='children'),
+    Output(component_id='L', component_property='figure'),
     [
     Input(component_id='my-dropdown', component_property='value')]
     )
 
 def update_LSTM(selected_ticket):
-    data =  data_all.loc[data_all['symbol']== selected_ticket]
-    coin_df=data[['time', 'close']].copy()
-
-    path_lstm = 'LSTM_models/'+selected_ticket+'_LSTM.h5'
-    modle_lstm = load_model(path_lstm)
-
+    coin_df = data_all.loc[data_all['symbol']== selected_ticket]
+    coin_df = coin_df[['time', 'close']].copy()
+        
+        
     cl = coin_df.close.astype('float32')
     train = cl[0:int(len(cl)*0.80)]
     scl = MinMaxScaler()
-
+            #Scale the data
+    scl.fit(train.values.reshape(-1,1))
+    cl =scl.transform(cl.values.reshape(-1,1))
+        #Create a function to process the data into lb observations look back slices
+        # and create the train test dataset (90-10)
     def processData(coin_df,lb):
         X,Y = [],[]
         for i in range(len(coin_df)-lb-1):
             X.append(coin_df[i:(i+lb),0])
             Y.append(coin_df[(i+lb),0])
         return np.array(X),np.array(Y)
-        lb=10
-        X,y = processData(cl,lb)
-        X_train,X_test = X[:int(X.shape[0]*0.90)],X[int(X.shape[0]*0.90):]
-        y_train,y_test = y[:int(y.shape[0]*0.90)],y[int(y.shape[0]*0.90):]
+    lb=10
+    X,y = processData(cl,lb)
+    X_train,X_test = X[:int(X.shape[0]*0.90)],X[int(X.shape[0]*0.90):]
+    y_train,y_test = y[:int(y.shape[0]*0.90)],y[int(y.shape[0]*0.90):]
+        
+    path_lstm = 'LSTM_models/'+selected_ticket+'_LSTM.h5'
+    model = load_model(path_lstm)
+        
+    # model = Sequential()
+    # model.add(LSTM(256,input_shape=(lb,1)))
+    # model.add(Dense(1))
+    # model.compile(optimizer='adam',loss='mse')
+        # #Reshape data for (Sample,Timestep,Features) 
+    X_train = X_train.reshape((X_train.shape[0],X_train.shape[1],1))
+    X_test = X_test.reshape((X_test.shape[0],X_test.shape[1],1))
+        #Fit model with history to check for overfitting
+    model.fit(X_train,y_train,epochs=100,validation_data=(X_test,y_test),shuffle=False)
+        # model.summary() 
 
-        modle_lstm.fit(X_train,y_train,epochs=100,validation_data=(X_test,y_test),shuffle=False)
+        # # plt.figure(figsize=(12,8))
+    Xt = model.predict(X_train)
+    list1 = scl.inverse_transform(y_test.reshape(-1,1)).tolist()
+    list2 = scl.inverse_transform(Xt).tolist()
+    test=pd.DataFrame(list1)
+    test2=pd.DataFrame(list2)   
+    test_merge = test.merge(test2, left_index=True, right_index=True)
+    test_merge.columns=['Predicted', 'Actual']
+    genral_fig6 = make_subplots(specs=[[{"secondary_y": True}]])
+    genral_fig6.add_trace(go.Scatter(y=test_merge['Predicted'], x=test_merge.index, name="Predicted"),secondary_y=False,)
 
-        list1 = scl.inverse_transform(y_train.reshape(-1,1)).tolist()
-        list2 = scl.inverse_transform(X_test).tolist()
-        test=pd.DataFrame(list1)
-        test2=pd.DataFrame(list2)
-  
-        test_merge = test.merge(test2, left_index=True, right_index=True)
-        test_merge.columns=['Predicted', 'Actual']
-        genral_fig = make_subplots(specs=[[{"secondary_y": True}]])
-        genral_fig.add_trace(
-            go.Scatter(y=test_merge['Predicted'], x=test_merge.index, name="Predicted"),
-            secondary_y=False,
-            )
-        genral_fig.add_trace(
-            go.Scatter(y=test_merge['Actual'], x=test_merge.index, name="Actual"),
-            secondary_y=True,
-            )
+    genral_fig6.add_trace(go.Scatter(y=test_merge['Actual'], x=test_merge.index, name="Actual"),secondary_y=True,)
 
 
-
-        return genral_fig
-
-
+    return genral_fig6
 
 
 
@@ -296,7 +303,7 @@ def update_LSTM(selected_ticket):
     #path_arima = 'ARIMA_models/'+selected_ticket+'_ARIMA.h5'    
     #Arima_model = joblib.load(path_arima)
     #xt = Arima_model.forecast()
-    return genral_fig
+
 
 
 
