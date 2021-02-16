@@ -1,7 +1,4 @@
-import matplotlib.pyplot as plt
-from math import pi
 import dash
-import dash_table
 import dash_html_components as html
 import dash_core_components as dcc
 from dash.dependencies import Input, Output, State
@@ -12,19 +9,28 @@ import plotly.graph_objects as go
 from keras.models import load_model
 from sklearn.preprocessing import MinMaxScaler
 import numpy as np
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import MetaData
-from sqlalchemy import *
-import psycopg2
-from sqlalchemy.orm import create_session
+import matplotlib.pyplot as plt
+from plotly.tools import mpl_to_plotly
+import plotly.tools as tls
+from sqlalchemy import create_engine
 from keras.models import Sequential
 from keras.layers import LSTM,Dropout,Dense
-from keras.models import load_model
-import joblib
+from sqlalchemy.ext.declarative import declarative_base
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
 from sklearn.preprocessing import MinMaxScaler
-
+import joblib
+from dash.dependencies import Input, Output
+import keras
+from keras import Sequential
+from keras.layers import LSTM
+from keras.layers import Dense
+from sklearn.preprocessing import MinMaxScaler
+from statsmodels.tsa.arima_model import ARIMA
 from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor
 from plotly.subplots import make_subplots
 
 
@@ -295,7 +301,7 @@ def update_LSTM(selected_ticket):
     #xt = Arima_model.forecast()
 
 
-
+# arima model
 @app.callback(
     Output(component_id='Arima', component_property='figure'),
     [
@@ -310,23 +316,44 @@ def update_arima(selected_ticket):
     df_close = coin_df['close']
     df_log = np.log(df_close)
     train_data, test_data = df_log[3:int(len(df_log)*0.9)], df_log[int(len(df_log)*0.9):]
-    path_a = 'ARIMA_models/'+selected_ticket+'_ARIMA.h5'
-    model_a = joblib.load(path_a)
-    #fitted = model_a.fit(disp=-1)  
-    fc = model_a.forecast(72, alpha=0.05)  # 95% confidence
+
+    #path_a = 'ARIMA_models/BTC_ARIMA.h5'
+    #model_a = joblib.load(path_a)
+
+    # model_a.fit(X_train,y_train,epochs=100,validation_data=(X_test,y_test),shuffle=False)
+    # model_a = ARIMA(train_data, order=(1, 1, 1))  
+    # fitted = model_a.fit(disp=-1)  
+
+    model_a = ARIMA(train_data, order=(1, 1, 1))  
+    fitted = model_a.fit(disp=-1)  
+
+    fc, se, conf = fitted.forecast(72, alpha=0.05)  # 95% confidence
     fc_series = pd.Series(fc, index=test_data.index)
     test_data=pd.DataFrame(test_data)
     train_data=pd.DataFrame(train_data)
     fc_series=pd.DataFrame(fc_series)
+
     genral_fig7 = make_subplots(specs=[[{"secondary_y": False}]])
-    genral_fig7.add_trace(go.Scatter(y=test_data['close'], x=test_data.index, name="Actual Price"),secondary_y=False,)
-    genral_fig7.add_trace(go.Scatter(y=train_data['close'], x=train_data.index, name="Training"),secondary_y=False,)
-    genral_fig7.add_trace(go.Scatter(y=fc_series[0], x=fc_series.index, name="Predicted Price"),secondary_y=False,)
+    genral_fig7.add_trace(
+        go.Scatter(y=test_data['close'], x=test_data.index, name="Actual Price"),
+        secondary_y=False,
+        )
+
+    genral_fig7.add_trace(
+        go.Scatter(y=train_data['close'], x=train_data.index, name="Training"),
+        secondary_y=False,
+        )
+    genral_fig7.add_trace(
+        go.Scatter(y=fc_series[0], x=fc_series.index, name="Predicted Price"),
+        secondary_y=False,
+        )
 
     return genral_fig7
 
 
 
+
+# random forest 
 
 @app.callback(
     Output(component_id='random-forest', component_property='figture'),
@@ -345,11 +372,21 @@ def update_DF(selected_ticket):
     # Create a StandardScaler instance
     scaler = StandardScaler()
     # Fit the StandardScaler
+  
+    X_train, X_test, y_train, y_test = train_test_split(inputs, target, random_state=1)
+    X_scaler = scaler.fit(X_train)
+    X_train_scaled = X_scaler.transform(X_train)
+    X_test_scaled = X_scaler.transform(X_test)
+    #X_scaler = scaler.fit(X_train)
+    #X_train_scaled = X_scaler.transform(X_train)
+    #X_test_scaled = X_scaler.transform(X_test)
+    rf_model = RandomForestRegressor(n_estimators=128, random_state=78)
+    rf_model = rf_model.fit(X_train_scaled, y_train)
+
     input_scaler = scaler.fit_transform(inputs)
-    #input_scaled = input_scaler.transform(inputs)
     #predicted value
-    load_model = joblib.load('DF_models/BTC_RF.HDF5')
-    y_pred = load_model.predict(input_scaler)
+    #load_model = joblib.load('DF_models/'+selected_ticket+'_RF.HDF5')
+    y_pred = rf_model.predict(input_scaler)
     prices_df =pd.DataFrame(list(zip(y_pred,target)), columns=['Predicted', 'Actual'])
 
     fig = go.Figure()
@@ -364,8 +401,6 @@ def update_DF(selected_ticket):
             y=prices_df['Predicted'],
             title = 'Predicted'
         ))
-
-    
     fig.show()
     return fig
 
