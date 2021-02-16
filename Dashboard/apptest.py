@@ -221,24 +221,7 @@ app.layout = html.Div([
                     html.Div([dcc.Graph(id='data-plot-overview', figure=genral_fig)], className='row3'),
                     html.Div([dcc.Graph(id='data-plot-overview2', figure=genral_fig2)], className='row4'),
                     html.Div([dcc.Graph(id='data-plot-overview3', figure=genral_fig3)], className='row5'),
-                    html.H3(
-                        children = 'Bitcoin LSTM Model',
-                    ),
-                    html.Div([dcc.Graph(id='data-plot-overview4', figure=genral_fig6)], className='row6'),
-                    html.H3(
-                        children = 'Bitcoin ARIMA Model',
-                    ),
-                    html.Div([dcc.Graph(id='data-plot-overview5', figure=genral_fig7)], className='row7'),
-                    html.H3(
-                        children = 'Bitcoin Random Forest Model',
-                    ),
-                    html.Div([dcc.Graph(id='data-plot-overview6', figure=fig8)], className='row86'),
-                    html.H3(
-                        children = 'Select Cryptocurrency',
-                        style = {
-                            'textAlign': 'left'
-                        }
-                    ),
+                    
                     dcc.Dropdown(
                         id = 'my-dropdown',
                         options = [{'label': i, 'value': i}for i in data['name'].unique()],
@@ -313,7 +296,20 @@ app.layout = html.Div([
                         # dcc.Tab(label = 'Arima Predicted Price ', value = 'tab-5', children = [dcc.Graph(id = 'k')]),
                         # dcc.Tab(label = 'Random Forest Predicted Price ', value = 'tab-6'),
                         
-                        ]),  
+                        ]),
+                    html.H3(
+                        children = 'Bitcoin LSTM Model',
+                    ),
+                    html.Div([dcc.Graph(id='data-plot-overview4', figure=genral_fig6)], className='row6'),
+                    html.H3(
+                        children = 'Bitcoin ARIMA Model',
+                    ),
+                    html.Div([dcc.Graph(id='data-plot-overview5', figure=genral_fig7)], className='row7'),
+                    html.H3(
+                        children = 'Bitcoin Random Forest Model',
+                    ),
+                    html.Div([dcc.Graph(id='data-plot-overview6', figure=fig8)], className='row86'),
+                    
                     html.Div(id='tabs-example-content'),
 
 
@@ -334,29 +330,25 @@ class NoneValueError(Exception):
 
 class TicketSelectError(Exception):
     pass
-@app.callback(
-    Output('output', "children"),
-    Input("reddit", "value"),
-    Input("tweets", "value"),
-    Input("news", "value"),
-    Input("youtube", "value"),
-    Input("url_shares", "value"),
-)   
-def number_render(reddit, tweets, news, youtube, url_shares):
-    return u'reddit {}, tweets {}, news {}, youtube {}, url_shares {}'.format(reddit, tweets, news, youtube, url_shares)
+# @app.callback(
+#     Output('output', "children"),
+#     Input("reddit", "value"),
+#     Input("tweets", "value"),
+#     Input("news", "value"),
+#     Input("youtube", "value"),
+#     Input("url_shares", "value"),
+# )   
+# def number_render(reddit, tweets, news, youtube, url_shares):
+#     return u'reddit {}, tweets {}, news {}, youtube {}, url_shares {}'.format(reddit, tweets, news, youtube, url_shares)
 
 
 
 @app.callback(
     Output(component_id='m', component_property='figure'),
     [
-    # Input(component_id='date-picker-range', component_property='start_date'),
-    # Input(component_id='date-picker-range', component_property='end_date'),
     Input(component_id='my-dropdown', component_property='value')]
     )
 def update_data(selected_ticket):
-    # new_data =data.loc[data['time'].between(start_date, end_date)]
-    # new_data_1 = new_data.loc[new_data['name'] == selected_ticket]
     coin_df = data.loc[(data['name']==selected_ticket)]
     genral_fig4 = make_subplots(specs=[[{"secondary_y": True}]])
 
@@ -383,26 +375,16 @@ def update_data(selected_ticket):
     genral_fig4.update_yaxes(title_text="Tweets", secondary_y=False)
     genral_fig4.update_yaxes(title_text="Price", secondary_y=True)
     
-    # genral_fig4.add_trace(
-    # go.Scatter(x=coin_df['time'], y=[coin_df['reddit_posts']]),
-    # secondary_y=True)
-    # genral_fig4.update_yaxes(title_text="<b>secondary</b> yaxis title", secondary_y=True)
-    # line_fig = px.line(new_data_1,
-    #                 x='time', y='close',
-    #                 title=f'{selected_ticket} Prices')
 
     return genral_fig4
     
 @app.callback(
     Output(component_id='n', component_property='figure'),
     [
-    # Input(component_id='date-picker-range', component_property='start_date'),
-    # Input(component_id='date-picker-range', component_property='end_date'),
     Input(component_id='my-dropdown', component_property='value')]
     )
 
 def update_social(selected_ticket):
-    # new_data =data.loc[data['time'].between(start_date, end_date)]
     new_data_1 = data.loc[(data['name']==selected_ticket)]
     
 
@@ -416,8 +398,6 @@ def update_social(selected_ticket):
 @app.callback(
     Output(component_id='i', component_property='figure'),
     [
-    # Input(component_id='date-picker-range', component_property='start_date'),
-    # Input(component_id='date-picker-range', component_property='end_date'),
     Input(component_id='my-dropdown', component_property='value')])
 
 def update_social3(selected_ticket):
@@ -441,148 +421,13 @@ def update_social3(selected_ticket):
 
     return genral_fig5
 
-@app.callback(
-    Output(component_id='k', component_property='figure'),
-    [
-    # Input(component_id='date-picker-range', component_property='start_date'),
-    # Input(component_id='date-picker-range', component_property='end_date'),
-    Input(component_id='my-dropdown', component_property='value')]
-    )
-def arima():
-#
-    coin_df = data.loc[(data['name']=='Bitcoin')]
-    coin_df = coin_df[['time', 'close']].copy()
-    coin_df.index=coin_df['time']
-    df_close = coin_df['close']
-    df_log = np.log(df_close)
-    train_data, test_data = df_log[3:int(len(df_log)*0.9)], df_log[int(len(df_log)*0.9):]
-
-    path_a = 'ARIMA_models/BTC_ARIMA.h5'
-    model_a = joblib.load(path_a)
-
-
-    # model_a.fit(X_train,y_train,epochs=100,validation_data=(X_test,y_test),shuffle=False)
-    # model_a = ARIMA(train_data, order=(1, 1, 1))  
-    # fitted = model_a.fit(disp=-1)  
-
-
-    model_a = ARIMA(train_data, order=(1, 1, 1))  
-    fitted = model_a.fit(disp=-1)  
-
-    fc, se, conf = fitted.forecast(72, alpha=0.05)  # 95% confidence
-    fc_series = pd.Series(fc, index=test_data.index)
-    test_data=pd.DataFrame(test_data)
-    train_data=pd.DataFrame(train_data)
-    fc_series=pd.DataFrame(fc_series)
-
-    genral_fig7 = make_subplots(specs=[[{"secondary_y": False}]])
-    genral_fig7.add_trace(
-        go.Scatter(y=test_data['close'], x=test_data.index, name="Actual Price"),
-        secondary_y=False,
-        )
-
-    genral_fig7.add_trace(
-        go.Scatter(y=train_data['close'], x=train_data.index, name="Training"),
-        secondary_y=False,
-        )
-    genral_fig7.add_trace(
-        go.Scatter(y=fc_series[0], x=fc_series.index, name="Predicted Price"),
-        secondary_y=False,
-        )
-#  def update_LSTM(selected_ticket):
-#     coin_df = data.loc[data['symbol']== selected_ticket]
-#     coin_df = coin_df[['time', 'close']].copy()
-        
-        
-#     cl = coin_df.close.astype('float32')
-#     train = cl[0:int(len(cl)*0.80)]
-#     scl = MinMaxScaler()
-#             #Scale the data
-#     scl.fit(train.values.reshape(-1,1))
-#     cl =scl.transform(cl.values.reshape(-1,1))
-#         #Create a function to process the data into lb observations look back slices
-#         # and create the train test dataset (90-10)
-#     def processData(coin_df,lb):
-#         X,Y = [],[]
-#         for i in range(len(coin_df)-lb-1):
-#             X.append(coin_df[i:(i+lb),0])
-#             Y.append(coin_df[(i+lb),0])
-#         return np.array(X),np.array(Y)
-#     lb=10
-#     X,y = processData(cl,lb)
-#     X_train,X_test = X[:int(X.shape[0]*0.90)],X[int(X.shape[0]*0.90):]
-#     y_train,y_test = y[:int(y.shape[0]*0.90)],y[int(y.shape[0]*0.90):]
-        
-#     path_lstm = 'LSTM_models/'+selected_ticket+'_LSTM.h5'
-#     model = load_model(path_lstm)
-        
-#     # model = Sequential()
-#     # model.add(LSTM(256,input_shape=(lb,1)))
-#     # model.add(Dense(1))
-#     # model.compile(optimizer='adam',loss='mse')
-#         # #Reshape data for (Sample,Timestep,Features) 
-#     X_train = X_train.reshape((X_train.shape[0],X_train.shape[1],1))
-#     X_test = X_test.reshape((X_test.shape[0],X_test.shape[1],1))
-#         #Fit model with history to check for overfitting
-#     model.fit(X_train,y_train,epochs=100,validation_data=(X_test,y_test),shuffle=False)
-#         # model.summary() 
-
-#         # # plt.figure(figsize=(12,8))
-#     Xt = model.predict(X_train)
-#     list1 = scl.inverse_transform(y_test.reshape(-1,1)).tolist()
-#     list2 = scl.inverse_transform(Xt).tolist()
-#     test=pd.DataFrame(list1)
-#     test2=pd.DataFrame(list2)   
-#     test_merge = test.merge(test2, left_index=True, right_index=True)
-#     test_merge.columns=['Predicted', 'Actual']
-#     genral_fig6 = make_subplots(specs=[[{"secondary_y": True}]])
-#     genral_fig6.add_trace(go.Scatter(y=test_merge['Predicted'], x=test_merge.index, name="Predicted"),secondary_y=False,)
-
-#     genral_fig6.add_trace(go.Scatter(y=test_merge['Actual'], x=test_merge.index, name="Actual"),secondary_y=True,)
-
-#     return genral_fig6
 
 @app.callback(
     Output(component_id='l', component_property='figure'),
     [
-    # Input(component_id='date-picker-range', component_property='start_date'),
-    # Input(component_id='date-picker-range', component_property='end_date'),
     Input(component_id='my-dropdown', component_property='value')]
     )
-#  app.layout = html.Div([
-#     dcc.Textarea(
-#         id='textarea-example',
-#         value='Textarea content initialized\nwith multiple lines of text',
-#         style={'width': '100%', 'height': 300},
-#     ),
-#     html.Div(id='textarea-example-output', style={'whiteSpace': 'pre-line'})
-#     ])
-
-
-# @app.callback(
-#     Output('textarea-state-example-output', 'children'),
-#     Input('textarea-state-example-button', 'n_clicks'),
-#     State('input1', 'value'),State('input2', 'value'),State('input3', 'value'),State('input4', 'value'),State('input5', 'value')
-# )
-# def update_output(n_clicks, value):
-#     if n_clicks > 0:
-#         return 'You have entered: \n{}'.format(value)
-
-# def update_social2(selected_ticket):
-    # load, no need to initialize the loaded_rf
-    # rf = joblib.load("../DF_models/BTC_RF.HDF5")
-    # #separate inputs and output
-    # coin_df_clean = data.loc[data['name'] == 'Bitcoin']
-    # target = coin_df_clean['close']
-    # inputs = coin_df_clean.drop(columns=["close", "index", "asset_id", "time", "symbol"])
-    # #separate inputs and output
-    # target = coin_df_clean['close']
-    # inputs = coin_df_clean.drop(columns=["close", "index", "asset_id", "time", "symbol"])
-    # #predicted value
-    # # y_pred = rf.predict(input_scaled)
     
-    # # return y_pred
-
 @app.callback(Output('tabs-example-content', 'children'),
               Input('tabs-styled-with-props', 'value'))
 def render_content(tab):
