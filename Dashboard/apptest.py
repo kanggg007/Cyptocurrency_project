@@ -14,6 +14,8 @@ import matplotlib.pyplot as plt
 from plotly.tools import mpl_to_plotly
 import plotly.tools as tls
 from sqlalchemy import create_engine
+from sqlalchemy import Table
+from sqlalchemy.orm import create_session
 from keras.models import Sequential
 from keras.layers import LSTM,Dropout,Dense
 from sqlalchemy.ext.declarative import declarative_base
@@ -44,29 +46,24 @@ from plotly.subplots import make_subplots
 # setup app
 app = dash.Dash()
 
-#db_password='Kl@v5SQL'
-#user_name='Crypto_Team'
-#aws_password='Cryptocurrency_Project'
+db_password='Kl@v5SQL'
+user_name='Crypto_Team'
+aws_password='Cryptocurrency_Project'
 
-#url='cryptodb.crgu064gyupd.us-east-2.rds.amazonaws.com'
-#aws_string=f"postgresql://{user_name}:{aws_password}@{url}:5432/postgres"
-#engine = create_engine(aws_string)
-##Create and engine and get the metadata
-#Base = declarative_base()
-#metadata = MetaData(bind=engine)
+url='cryptodb.crgu064gyupd.us-east-2.rds.amazonaws.com'
+aws_string=f"postgresql://{user_name}:{aws_password}@{url}:5432/postgres"
+engine = create_engine(aws_string)
 
-##reflect table
-#coin = Table('all_coins_data', metadata, autoload=True, autoload_with=engine)
-##Create a session to use the tables    
-#session = create_session(bind=engine)
 
-##Query database
-#coin_list = session.query(btc).all()
-#coin_df=pd.DataFrame(coin_list)
-#coin_df = coin_df.drop('Unnamed: 0', axis= True)
-#data = coin_df.copy()
+# db_string = f"postgres://postgres:{password}@localhost/cryptocurrency_db"
+# engine = create_engine(db_string)
+data = pd.read_sql_query('SELECT * FROM all_coins_data', con=engine)
 
-data_all = pd.read_csv('coin_all.csv')
+data=data.dropna(subset=['close', 'open'])
+data_lean=data.fillna(0)
+data_all = data_lean.copy()
+
+#data_all = pd.read_csv('coin_all.csv')
 
 ##top 10 currency based on map 
 data_top_10 = data_all.loc[data_all['time'] ==  '2021-01-31']
@@ -86,9 +83,9 @@ df_top_10_social['social impact'] = df_top_10_social.sum(axis=1)
 #genral_sunburst = px.pie.gapminder()
 
 
-genral_market_cap = px.pie(data_frame = df_top_10, values = 'market_cap',names= 'symbol', hole=.3)
-genral_social_media = px.pie(data_frame = df_top_10_social, values = 'social impact',names = 'symbol', hole=.3)
-genral_price = px.line(data_frame= data_all, x ='time', y = 'close', color = 'symbol')
+genral_market_cap = px.pie(data_frame = df_top_10, values = 'market_cap',names= 'symbol', hole=.3, title = 'Top 5 currenciees Marker Capital')
+genral_social_media = px.pie(data_frame = df_top_10_social, values = 'social impact',names = 'symbol', hole=.3, title = 'Top 5 currenciees Social Impact')
+genral_price = px.line(data_frame= data_all, x ='time', y = 'close', color = 'symbol', title = 'Top 20 currenciees Price')
 
 # setup layout
 app.layout = html.Div([
@@ -133,6 +130,7 @@ app.layout = html.Div([
                     #dcc.Graph(id = 'm'),
                     #dcc.Graph(id= 'n')
     ])
+       
         
 @app.callback(
     Output(component_id='A', component_property='figure'),
@@ -141,17 +139,28 @@ app.layout = html.Div([
     Input(component_id='date-picker-range', component_property='end_date'),
     Input(component_id='my-dropdown', component_property='value')]
     )
-def update_data(start_date, end_date, selected_ticket):
 
-
-
+def update_data(start_date, end_date,selected_ticket):
     new_data =data_all.loc[data_all['time'].between(start_date, end_date)]
     new_data_1 = new_data.loc[new_data['symbol'] == selected_ticket]
-    line_fig = px.line(new_data_1,
-                    x='time', y='close',
-                    title=f'{selected_ticket} Prices')
+    new_data_1 = new_data_1[['url_shares','reddit_posts','tweets','news','youtube','symbol','time','close']]
+    new_data_1['total_socail'] = new_data_1.iloc[:,0:5].sum(axis=1)
 
-    return line_fig
+    genral_fig4 = make_subplots(specs=[[{"secondary_y": True}]])
+    genral_fig4.add_trace(
+    go.Scatter(x=new_data_1['time'], y=new_data_1['total_socail'], name="Overall Socail Impact"),
+    secondary_y=False,)
+    genral_fig4.add_trace(
+    go.Scatter(x=new_data_1['time'], y=new_data_1['close'], name="Price"),
+    secondary_y=True,)
+    genral_fig4.update_layout(title_text="Overall Socail Impactvs. Price")
+
+    genral_fig4.update_xaxes(title_text="Date")
+    genral_fig4.update_yaxes(title_text="Overall Socail Impact", secondary_y=False)
+    genral_fig4.update_yaxes(title_text="Price", secondary_y=True)
+    #
+
+    return genral_fig4
 
 
 
