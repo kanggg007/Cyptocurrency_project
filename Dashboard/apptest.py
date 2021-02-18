@@ -81,7 +81,8 @@ app.layout = html.Div([
                     dcc.Dropdown(
                         id = 'my-dropdown',
                         options = [{'label': i, 'value': i}for i in data_all['symbol'].unique()],
-                        placeholder = 'please enter ticker'
+                        placeholder = 'please enter ticker',
+                        value = 'ADA'
                     ),
 
                     dcc.DatePickerRange(
@@ -339,7 +340,6 @@ def update_DF(selected_ticket):
     data1=new_data.dropna(subset=['close', 'open'])
     data_lean=data1.fillna(0)
     new_data = data_lean.copy()
-    #new_data.drop('Unnamed: 0')
 
     target = new_data['close']
     inputs = new_data.drop(columns=["close", "index", "asset_id", "time", "symbol"])
@@ -348,37 +348,26 @@ def update_DF(selected_ticket):
     scaler = StandardScaler()
     # Fit the StandardScaler
     input_scaler = scaler.fit(inputs)
-    input_scaled = input_scaler.transform(input_scaler)
-    #X_train, y_train = train_test_split(inputs, target, random_state=1)
-    #X_scaler = scaler.fit(X_train)
-    #X_train_scaled = X_scaler.transform(X_train)
-    #X_scaler = scaler.fit(X_train)
-    #X_train_scaled = X_scaler.transform(X_train)
-    #X_test_scaled = X_scaler.transform(X_test)
-    #rf_model = RandomForestRegressor(n_estimators=128, random_state=78)
-    #rf_model = rf_model.fit(X_train_scaled, y_train)
+    input_scaled = input_scaler.transform(inputs)
 
-    #input_scaler = scaler.fit_transform(inputs)
     #predicted value
     import joblib
     load_model = joblib.load('DF_models/'+selected_ticket+'_RF.HDF5')
     y_pred = load_model.predict(input_scaled)
     prices_df =pd.DataFrame(list(zip(y_pred,target)), columns=['Predicted', 'Actual'])
 
-    fig = go.Figure()
-    fig.add_trace(
-        go.Scatter(
-            y=prices_df['Actual'],
-            title = 'Actual'
-        ))
-
-    fig.add_trace(
-        go.Scatter(
-            y=prices_df['Predicted'],
-            title = 'Predicted'
-        ))
-    fig.show()
-    return fig
+    genral_fig10 = make_subplots(specs=[[{"secondary_y": True}]])
+    genral_fig10.add_trace(
+    go.Scatter(x=new_data['time'], y=prices_df['Predicted'], name="Predicted"),
+    secondary_y=False,)
+    genral_fig10.add_trace(
+    go.Scatter(x=new_data['time'], y=prices_df['Actual'], name="Actual"),
+    secondary_y=False,)
+    genral_fig10.update_layout(title_text="Actual VS Predicted Prices")
+    genral_fig10.update_xaxes(title_text="Date")
+    genral_fig10.update_yaxes(title_text="Price [USD]", secondary_y=False)
+    
+    return genral_fig10
 
     #plot compare predicted vs real
    
