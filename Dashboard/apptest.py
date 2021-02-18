@@ -35,35 +35,19 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from plotly.subplots import make_subplots
 
-
-
-
-# from config import db_password
-
-
-
-
 # setup app
 app = dash.Dash()
 
-db_password='Kl@v5SQL'
-user_name='Crypto_Team'
-aws_password='Cryptocurrency_Project'
+from config2 import db_password, user_name, aws_password
 
 url='cryptodb.crgu064gyupd.us-east-2.rds.amazonaws.com'
 aws_string=f"postgresql://{user_name}:{aws_password}@{url}:5432/postgres"
 engine = create_engine(aws_string)
-
-
-# db_string = f"postgres://postgres:{password}@localhost/cryptocurrency_db"
-# engine = create_engine(db_string)
 data = pd.read_sql_query('SELECT * FROM all_coins_data', con=engine)
 
-data=data.dropna(subset=['close', 'open'])
-data_lean=data.fillna(0)
+data1=data.dropna(subset=['close', 'open'])
+data_lean=data1.fillna(0)
 data_all = data_lean.copy()
-
-#data_all = pd.read_csv('coin_all.csv')
 
 ##top 10 currency based on map 
 data_top_10 = data_all.loc[data_all['time'] ==  '2021-01-31']
@@ -78,14 +62,9 @@ df_top_10_social = df_top_10[['symbol',
 df_top_10_social['social impact'] = df_top_10_social.sum(axis=1)
 
 
-
-
-#genral_sunburst = px.pie.gapminder()
-
-
-genral_market_cap = px.pie(data_frame = df_top_10, values = 'market_cap',names= 'symbol', hole=.3, title = 'Top 5 currenciees Marker Capital')
-genral_social_media = px.pie(data_frame = df_top_10_social, values = 'social impact',names = 'symbol', hole=.3, title = 'Top 5 currenciees Social Impact')
-genral_price = px.line(data_frame= data_all, x ='time', y = 'close', color = 'symbol', title = 'Top 20 currenciees Price')
+genral_market_cap = px.pie(data_frame = df_top_10, values = 'market_cap',names= 'symbol', hole=.3, title = 'Cryptocurrencies by Market Capital')
+genral_social_media = px.pie(data_frame = df_top_10_social, values = 'social impact',names = 'symbol', hole=.3, title = 'Social Media Engagement by Cryptocurrency')
+genral_price = px.line(data_frame= data_all, x ='time', y = 'close', color = 'symbol', title = 'Cryptocurrencies Price')
 
 # setup layout
 app.layout = html.Div([
@@ -110,25 +89,22 @@ app.layout = html.Div([
                         min_date_allowed=dt(2015, 1, 1),
                         max_date_allowed=dt.today().date() - timedelta(days=1),
                         initial_visible_month=dt.today().date() - timedelta(days=1),
+                        start_date = dt(2019, 3, 1),
                         end_date=dt.today().date() - timedelta(days=1)
                         ),
                         html.Div(id='output-container-date-picker-range'),
 
                     html.Div([
                     dcc.Tabs(id='tabs-styled-with-props', value='tab-1', children = [
-                        dcc.Tab(label='Acutal Price', value='tab-1',children = [dcc.Graph(id = 'A')]),
-                        dcc.Tab(label='Social Impact', value='tab-2',children = [dcc.Graph(id = 'S')]),
-                        dcc.Tab(label = ' LSTM Time Series Model ', value = 'tab-3', children = [dcc.Graph(id = 'L')]),
+                        dcc.Tab(label='Price', value='tab-1',children = [dcc.Graph(id = 'A')]),
+                        dcc.Tab(label='Social Engagement', value='tab-2',children = [dcc.Graph(id = 'S')]),
+                        dcc.Tab(label = 'LSTM Time Series Model ', value = 'tab-3', children = [dcc.Graph(id = 'L')]),
                         dcc.Tab(label = 'Arima Time Series Model ', value = 'tab-4', children = [dcc.Graph(id = 'Arima')]),
-                        dcc.Tab(label='Rondom Forest Model', value='tab-5',children = [dcc.Graph(id = 'random-forest')]),
+                        dcc.Tab(label='Random Forest Model', value='tab-5',children = [dcc.Graph(id = 'random-forest')]),
 
                     ]),
                     html.Div(id='tabs-example-content')
                 ])
-        
-            
-                    #dcc.Graph(id = 'm'),
-                    #dcc.Graph(id= 'n')
     ])
        
         
@@ -148,24 +124,23 @@ def update_data(start_date, end_date,selected_ticket):
 
     genral_fig4 = make_subplots(specs=[[{"secondary_y": True}]])
     genral_fig4.add_trace(
-    go.Scatter(x=new_data_1['time'], y=new_data_1['total_socail'], name="Overall Socail Impact"),
+    go.Scatter(x=new_data_1['time'], y=new_data_1['total_socail'], name="Social Engagement"),
     secondary_y=False,)
     genral_fig4.add_trace(
-    go.Scatter(x=new_data_1['time'], y=new_data_1['close'], name="Price"),
+    go.Scatter(x=new_data_1['time'], y=new_data_1['close'], name="Price [USD]"),
     secondary_y=True,)
-    genral_fig4.update_layout(title_text="Overall Socail Impactvs. Price")
+    genral_fig4.update_layout(title_text="Overall Social Engagement vs. Price")
 
     genral_fig4.update_xaxes(title_text="Date")
-    genral_fig4.update_yaxes(title_text="Overall Socail Impact", secondary_y=False)
+    genral_fig4.update_yaxes(title_text="Social Engagement", secondary_y=False)
     genral_fig4.update_yaxes(title_text="Price", secondary_y=True)
-    #
 
     return genral_fig4
 
 
 
 
-# socail media callback    
+# social media callback    
 @app.callback(
     Output(component_id='S', component_property='figure'),
     [
@@ -197,8 +172,8 @@ def update_social(start_date, end_date,selected_ticket):
     df3 = new_data_1[['url_shares_Adj','reddit_posts_Adj','tweets_Adj','news_Adj','youtube_Adj']]
 
     df3.rename(columns={
-        'url_shares_Adj': 'url_shares',
-        'reddit_posts_Adj': 'reddit_posts',
+        'url_shares_Adj': 'url shares',
+        'reddit_posts_Adj': 'reddit posts',
         'tweets_Adj': 'tweets',
         'news_Adj': 'news',
         'youtube_Adj': 'youtube'
@@ -267,20 +242,9 @@ def update_LSTM(selected_ticket):
     test_merge.columns=['Predicted', 'Actual']
     genral_fig6 = make_subplots(specs=[[{"secondary_y": True}]])
     genral_fig6.add_trace(go.Scatter(y=test_merge['Predicted'], x=test_merge.index, name="Predicted"),secondary_y=False,)
-
     genral_fig6.add_trace(go.Scatter(y=test_merge['Actual'], x=test_merge.index, name="Actual"),secondary_y=True,)
 
-
-    return genral_fig6
-
-
-
-
-
-
-
-    
-    
+    return genral_fig6     
     
     #scaler = MinMaxScaler()
     #last 60 days closing price values and convert the dataframe to an array
@@ -336,7 +300,7 @@ def update_arima(selected_ticket):
     model_a = ARIMA(train_data, order=(1, 1, 1))  
     fitted = model_a.fit(disp=-1)  
 
-    fc, se, conf = fitted.forecast(72, alpha=0.05)  # 95% confidence
+    fc = fitted.forecast(72, alpha=0.05)  # 95% confidence
     fc_series = pd.Series(fc, index=test_data.index)
     test_data=pd.DataFrame(test_data)
     train_data=pd.DataFrame(train_data)
@@ -365,15 +329,17 @@ def update_arima(selected_ticket):
 # random forest 
 
 @app.callback(
-    Output(component_id='random-forest', component_property='figture'),
+    Output(component_id='random-forest', component_property='figure'),
     [
     Input(component_id='my-dropdown', component_property='value')]
     )
 
 def update_DF(selected_ticket):
     new_data = data_all.loc[data_all['symbol'] == selected_ticket]
-    new_data = new_data.dropna()
-    new_data.drop('Unnamed: 0', axis=1, inplace= True)
+    data1=new_data.dropna(subset=['close', 'open'])
+    data_lean=data1.fillna(0)
+    new_data = data_lean.copy()
+    #new_data.drop('Unnamed: 0')
 
     target = new_data['close']
     inputs = new_data.drop(columns=["close", "index", "asset_id", "time", "symbol"])
@@ -381,21 +347,22 @@ def update_DF(selected_ticket):
     # Create a StandardScaler instance
     scaler = StandardScaler()
     # Fit the StandardScaler
-  
-    X_train, X_test, y_train, y_test = train_test_split(inputs, target, random_state=1)
-    X_scaler = scaler.fit(X_train)
-    X_train_scaled = X_scaler.transform(X_train)
-    X_test_scaled = X_scaler.transform(X_test)
+    input_scaler = scaler.fit(inputs)
+    input_scaled = input_scaler.transform(input_scaler)
+    #X_train, y_train = train_test_split(inputs, target, random_state=1)
+    #X_scaler = scaler.fit(X_train)
+    #X_train_scaled = X_scaler.transform(X_train)
     #X_scaler = scaler.fit(X_train)
     #X_train_scaled = X_scaler.transform(X_train)
     #X_test_scaled = X_scaler.transform(X_test)
-    rf_model = RandomForestRegressor(n_estimators=128, random_state=78)
-    rf_model = rf_model.fit(X_train_scaled, y_train)
+    #rf_model = RandomForestRegressor(n_estimators=128, random_state=78)
+    #rf_model = rf_model.fit(X_train_scaled, y_train)
 
-    input_scaler = scaler.fit_transform(inputs)
+    #input_scaler = scaler.fit_transform(inputs)
     #predicted value
-    #load_model = joblib.load('DF_models/'+selected_ticket+'_RF.HDF5')
-    y_pred = rf_model.predict(input_scaler)
+    import joblib
+    load_model = joblib.load('DF_models/'+selected_ticket+'_RF.HDF5')
+    y_pred = load_model.predict(input_scaled)
     prices_df =pd.DataFrame(list(zip(y_pred,target)), columns=['Predicted', 'Actual'])
 
     fig = go.Figure()
